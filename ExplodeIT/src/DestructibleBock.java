@@ -1,3 +1,5 @@
 public class DestructibleBock extends Block{
-    private int hp;
+    public DestructibleBock(String color, boolean isDestractible){
+        super(color, isDestractible);
+    }
 }
