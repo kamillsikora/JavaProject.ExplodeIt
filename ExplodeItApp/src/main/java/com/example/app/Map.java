@@ -1,3 +1,5 @@
+package com.example.app;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -82,7 +84,7 @@ public class Map {
         }
     }
 
-    //Helper to create a Block instance from the type
+    //Helper to create a com.example.app.Block instance from the type
     private Block createBlockFromResultSet(String type, String color) {
         switch (type) {
             case "LUCKY":

@@ -1,6 +1,11 @@
+package com.example.app;
+
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
@@ -12,10 +17,10 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) {
-        Label mapLabel = new Label("Map");
+        Label mapLabel = new Label("com.example.app.Map");
 
         ComboBox<String> mapComboBox = new ComboBox<>();
-        mapComboBox.setPromptText("Select a Map");
+        mapComboBox.setPromptText("Select a com.example.app.Map");
 
         List<Map> maps = Map.fetchMaps();
         for (Map map : maps) {
@@ -45,7 +50,7 @@ public class Main extends Application {
         Scene scene = new Scene(layout, 1200, 700);
 
         stage.setScene(scene);
-        stage.setTitle("Map Selector");
+        stage.setTitle("com.example.app.Map Selector");
         stage.show();
     }
 
@@ -72,7 +77,7 @@ public class Main extends Application {
         }
 
         Scene scene = new Scene(layout, 1200, 700);
-        mapStage.setTitle("Map Viewer");
+        mapStage.setTitle("com.example.app.Map Viewer");
         mapStage.setScene(scene);
         mapStage.show();
     }

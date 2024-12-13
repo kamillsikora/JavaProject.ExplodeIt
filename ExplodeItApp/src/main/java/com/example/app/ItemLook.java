@@ -1,3 +1,5 @@
+package com.example.app;
+
 public class ItemLook {
     private String look;
 

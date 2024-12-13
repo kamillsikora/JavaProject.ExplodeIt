@@ -1,3 +1,5 @@
+package com.example.app;
+
 public abstract class Block {
     private String color;
     private boolean isDestructible;

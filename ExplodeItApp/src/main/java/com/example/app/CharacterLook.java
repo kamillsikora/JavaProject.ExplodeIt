@@ -1,3 +1,5 @@
+package com.example.app;
+
 public class CharacterLook {
     private String behind;
     private String front;
