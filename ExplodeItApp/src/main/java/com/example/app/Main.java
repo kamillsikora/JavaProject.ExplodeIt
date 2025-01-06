@@ -155,6 +155,14 @@ public class Main extends Application {
     private void showMapWithCharacters(Stage stage, Map map) {
         Pane layout = new Pane();
 
+        // Ustaw tło na podstawie mapy
+        String colorOrImage = map.getColor().trim();
+        if (colorOrImage.startsWith("http")) {
+            layout.setStyle("-fx-background-image: url('" + colorOrImage + "'); -fx-background-size: cover;");
+        } else {
+            layout.setStyle("-fx-background-color: " + colorOrImage + ";");
+        }
+
         // Render blocks on the map
         for (Block block : map.getBlocks()) {
             Rectangle blockRect = new Rectangle(block.getPositionX() * 50, block.getPositionY() * 50, 50, 50);
@@ -167,16 +175,17 @@ public class Main extends Application {
         player1Image = new ImageView(new Image(getClass().getResource(player1Character.getLook().getFront()).toExternalForm()));
         player1Image.setFitWidth(40);
         player1Image.setFitHeight(40);
-        player1Image.setLayoutX(100);
-        player1Image.setLayoutY(100);
+        player1Image.setLayoutX(5);
+        player1Image.setLayoutY(5);
 
         // Display Player 2
         player2Image = new ImageView(new Image(getClass().getResource(player2Character.getLook().getFront()).toExternalForm()));
         player2Image.setFitWidth(40);
         player2Image.setFitHeight(40);
-        player2Image.setLayoutX(200);
-        player2Image.setLayoutY(100);
+        player2Image.setLayoutX(1155);
+        player2Image.setLayoutY(655);
 
+        // Add players to the layout
         layout.getChildren().addAll(player1Image, player2Image);
 
         Scene scene = new Scene(layout, 1200, 700);
@@ -210,8 +219,8 @@ public class Main extends Application {
             Image bombImage = new Image(getClass().getResource(
                     "/org/example/explodeitapp/images/bomb.png").toExternalForm());
             ImageView bomb = new ImageView(bombImage);
-            bomb.setFitWidth(40);
-            bomb.setFitHeight(40);
+            bomb.setFitWidth(50);
+            bomb.setFitHeight(50);
 
             // Oblicz najbliższą pozycję na siatce 50x50
             double bombX = Math.round(player.getLayoutX() / 50) * 50;
@@ -351,6 +360,9 @@ public class Main extends Application {
 
             int explodePower = character.getExplodePower(); // Moc wybuchu w kratkach
 
+            // Dodaj płomień w miejscu bomby
+            addFlame(bombX, bombY, layout, flameImage);
+
             // Generuj płomienie w każdą stronę
             for (int i = 1; i <= explodePower; i++) {
                 double upY = bombY - i * 50;
@@ -369,10 +381,11 @@ public class Main extends Application {
         }
     }
 
+
     private void addFlame(double x, double y, Pane layout, Image flameImage) {
         ImageView flame = new ImageView(flameImage);
-        flame.setFitWidth(40);
-        flame.setFitHeight(40);
+        flame.setFitWidth(50);
+        flame.setFitHeight(50);
         flame.setLayoutX(x);
         flame.setLayoutY(y);
         layout.getChildren().add(flame);
