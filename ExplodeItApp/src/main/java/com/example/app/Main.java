@@ -33,8 +33,9 @@ public class Main extends Application {
     private boolean player2MovingVertically = false;
     private final List<Rectangle> blockRectangles = new ArrayList<>();
     private boolean gameOver = false;
-    private boolean player1BombActive = false;
-    private boolean player2BombActive = false;
+    private final List<ImageView> activeBombs = new ArrayList<>();
+    private final Set<ImageView> accessibleBombs = new HashSet<>();
+
 
 
     @Override
@@ -215,30 +216,30 @@ public class Main extends Application {
 
     private void dropBomb(Character character, ImageView player, Pane layout) {
         try {
-            // Wczytaj obraz bomby
             Image bombImage = new Image(getClass().getResource(
                     "/org/example/explodeitapp/images/bomb.png").toExternalForm());
             ImageView bomb = new ImageView(bombImage);
             bomb.setFitWidth(50);
             bomb.setFitHeight(50);
 
-            // Oblicz najbliższą pozycję na siatce 50x50
             double bombX = Math.round(player.getLayoutX() / 50) * 50;
             double bombY = Math.round(player.getLayoutY() / 50) * 50;
 
             bomb.setLayoutX(bombX);
             bomb.setLayoutY(bombY);
 
-            // Dodaj bombę do widoku
             layout.getChildren().add(bomb);
+            activeBombs.add(bomb);
+            accessibleBombs.add(bomb); // Na początku bomba jest dostępna dla przejścia
 
-            // Ustaw czas usunięcia bomby na podstawie `explodeSpeed`
-            int explodeSpeed = character.getExplodeSpeed(); // czas w sekundach
+            int explodeSpeed = character.getExplodeSpeed();
             new javafx.animation.Timeline(
                     new javafx.animation.KeyFrame(
                             javafx.util.Duration.seconds(explodeSpeed),
                             event -> {
                                 layout.getChildren().remove(bomb);
+                                activeBombs.remove(bomb);
+                                accessibleBombs.remove(bomb); // Usuń z dostępnych bomb
                                 triggerExplosion(character, bombX, bombY, layout);
                             }
                     )
@@ -427,12 +428,11 @@ public class Main extends Application {
         });
     }
 
-
-
     private boolean checkCollision(ImageView player, int dx, int dy) {
         double nextX = player.getLayoutX() + dx;
         double nextY = player.getLayoutY() + dy;
 
+        // Sprawdź kolizję z blokami
         for (Rectangle block : blockRectangles) {
             if (block.getBoundsInParent().intersects(
                     nextX,
@@ -442,6 +442,30 @@ public class Main extends Application {
                 return true; // Blok znajduje się w drodze
             }
         }
+
+        // Sprawdź kolizję z bombami
+        for (ImageView bomb : activeBombs) {
+            if (bomb.getBoundsInParent().intersects(
+                    nextX,
+                    nextY,
+                    player.getFitWidth(),
+                    player.getFitHeight())) {
+                // Jeśli bomba jest dostępna, pozwól przejść
+                if (accessibleBombs.contains(bomb)) {
+                    // Usuń bombę z dostępnych, gdy gracz odejdzie
+                    if (!bomb.getBoundsInParent().intersects(
+                            player.getLayoutX(),
+                            player.getLayoutY(),
+                            player.getFitWidth(),
+                            player.getFitHeight())) {
+                        accessibleBombs.remove(bomb);
+                    }
+                    return false; // Brak kolizji
+                }
+                return true; // Kolizja z bombą
+            }
+        }
+
         return false; // Brak kolizji
     }
 
