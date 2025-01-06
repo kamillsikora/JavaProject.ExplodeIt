@@ -2,6 +2,7 @@ package com.example.app;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -31,6 +32,10 @@ public class Main extends Application {
     private boolean player1MovingVertically = false;
     private boolean player2MovingVertically = false;
     private final List<Rectangle> blockRectangles = new ArrayList<>();
+    private boolean gameOver = false;
+    private boolean player1BombActive = false;
+    private boolean player2BombActive = false;
+
 
     @Override
     public void start(Stage stage) {
@@ -145,6 +150,8 @@ public class Main extends Application {
         stage.setScene(characterSelectionScene);
     }
 
+    private final List<ImageView> bombs = new ArrayList<>(); // Lista bomb
+
     private void showMapWithCharacters(Stage stage, Map map) {
         Pane layout = new Pane();
 
@@ -174,7 +181,16 @@ public class Main extends Application {
 
         Scene scene = new Scene(layout, 1200, 700);
 
-        scene.setOnKeyPressed(event -> pressedKeys.add(event.getCode()));
+        scene.setOnKeyPressed(event -> {
+            pressedKeys.add(event.getCode());
+            if (event.getCode() == KeyCode.SPACE) {
+                dropBomb(player1Character, player1Image, layout); // Przekazuje postać gracza 1
+            }
+            if (event.getCode() == KeyCode.ENTER) {
+                dropBomb(player2Character, player2Image, layout); // Przekazuje postać gracza 2
+            }
+        });
+
         scene.setOnKeyReleased(event -> pressedKeys.remove(event.getCode()));
 
         AnimationTimer timer = new AnimationTimer() {
@@ -188,61 +204,215 @@ public class Main extends Application {
         stage.setScene(scene);
     }
 
-    private void updatePlayerPositions(Scene scene) {
-        double sceneWidth = 1200; // Szerokość okna
-        double sceneHeight = 700; // Wysokość okna
+    private void dropBomb(Character character, ImageView player, Pane layout) {
+        try {
+            // Wczytaj obraz bomby
+            Image bombImage = new Image(getClass().getResource(
+                    "/org/example/explodeitapp/images/bomb.png").toExternalForm());
+            ImageView bomb = new ImageView(bombImage);
+            bomb.setFitWidth(40);
+            bomb.setFitHeight(40);
 
-        // Player 1 movement
-        if (pressedKeys.contains(KeyCode.W)) {
-            if (player1Image.getLayoutY() > 0 && !checkCollision(player1Image, 0, -5)) {
-                player1Image.setLayoutY(player1Image.getLayoutY() - 5);
-                player1MovingVertically = true;
-            }
-        } else if (pressedKeys.contains(KeyCode.S)) {
-            if (player1Image.getLayoutY() + player1Image.getFitHeight() < sceneHeight && !checkCollision(player1Image, 0, 5)) {
-                player1Image.setLayoutY(player1Image.getLayoutY() + 5);
-                player1MovingVertically = true;
-            }
-        } else {
-            player1MovingVertically = false;
-        }
+            // Oblicz najbliższą pozycję na siatce 50x50
+            double bombX = Math.round(player.getLayoutX() / 50) * 50;
+            double bombY = Math.round(player.getLayoutY() / 50) * 50;
 
-        if (pressedKeys.contains(KeyCode.A) && !player1MovingVertically) {
-            if (player1Image.getLayoutX() > 0 && !checkCollision(player1Image, -5, 0)) {
-                player1Image.setLayoutX(player1Image.getLayoutX() - 5);
-            }
-        } else if (pressedKeys.contains(KeyCode.D) && !player1MovingVertically) {
-            if (player1Image.getLayoutX() + player1Image.getFitWidth() < sceneWidth && !checkCollision(player1Image, 5, 0)) {
-                player1Image.setLayoutX(player1Image.getLayoutX() + 5);
-            }
-        }
+            bomb.setLayoutX(bombX);
+            bomb.setLayoutY(bombY);
 
-        // Player 2 movement
-        if (pressedKeys.contains(KeyCode.UP)) {
-            if (player2Image.getLayoutY() > 0 && !checkCollision(player2Image, 0, -5)) {
-                player2Image.setLayoutY(player2Image.getLayoutY() - 5);
-                player2MovingVertically = true;
-            }
-        } else if (pressedKeys.contains(KeyCode.DOWN)) {
-            if (player2Image.getLayoutY() + player2Image.getFitHeight() < sceneHeight && !checkCollision(player2Image, 0, 5)) {
-                player2Image.setLayoutY(player2Image.getLayoutY() + 5);
-                player2MovingVertically = true;
-            }
-        } else {
-            player2MovingVertically = false;
-        }
+            // Dodaj bombę do widoku
+            layout.getChildren().add(bomb);
 
-        if (pressedKeys.contains(KeyCode.LEFT) && !player2MovingVertically) {
-            if (player2Image.getLayoutX() > 0 && !checkCollision(player2Image, -5, 0)) {
-                player2Image.setLayoutX(player2Image.getLayoutX() - 5);
-            }
-        } else if (pressedKeys.contains(KeyCode.RIGHT) && !player2MovingVertically) {
-            if (player2Image.getLayoutX() + player2Image.getFitWidth() < sceneWidth && !checkCollision(player2Image, 5, 0)) {
-                player2Image.setLayoutX(player2Image.getLayoutX() + 5);
-            }
+            // Ustaw czas usunięcia bomby na podstawie `explodeSpeed`
+            int explodeSpeed = character.getExplodeSpeed(); // czas w sekundach
+            new javafx.animation.Timeline(
+                    new javafx.animation.KeyFrame(
+                            javafx.util.Duration.seconds(explodeSpeed),
+                            event -> {
+                                layout.getChildren().remove(bomb);
+                                triggerExplosion(character, bombX, bombY, layout);
+                            }
+                    )
+            ).play();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
+    private void updatePlayerPositions(Scene scene) {
+        if (gameOver) {
+            return; // Nie pozwala na ruch po zakończeniu gry
+        }
+
+        double sceneWidth = 1200;
+        double sceneHeight = 700;
+        double margin = 5;
+
+        int player1Speed = player1Character.getCharacterSpeed();
+        int player2Speed = player2Character.getCharacterSpeed();
+
+        // Obsługa ruchu gracza 1
+        if (pressedKeys.contains(KeyCode.W)) {
+            if (player1Image.getLayoutY() > margin && !checkCollision(player1Image, 0, -player1Speed)) {
+                player1Image.setLayoutY(player1Image.getLayoutY() - player1Speed);
+            }
+        } else if (pressedKeys.contains(KeyCode.S)) {
+            if (player1Image.getLayoutY() + player1Image.getFitHeight() < sceneHeight - margin &&
+                    !checkCollision(player1Image, 0, player1Speed)) {
+                player1Image.setLayoutY(player1Image.getLayoutY() + player1Speed);
+            }
+        }
+
+        if (pressedKeys.contains(KeyCode.A)) {
+            if (player1Image.getLayoutX() > margin && !checkCollision(player1Image, -player1Speed, 0)) {
+                player1Image.setLayoutX(player1Image.getLayoutX() - player1Speed);
+            }
+        } else if (pressedKeys.contains(KeyCode.D)) {
+            if (player1Image.getLayoutX() + player1Image.getFitWidth() < sceneWidth - margin &&
+                    !checkCollision(player1Image, player1Speed, 0)) {
+                player1Image.setLayoutX(player1Image.getLayoutX() + player1Speed);
+            }
+        }
+
+        // Obsługa ruchu gracza 2
+        if (pressedKeys.contains(KeyCode.UP)) {
+            if (player2Image.getLayoutY() > margin && !checkCollision(player2Image, 0, -player2Speed)) {
+                player2Image.setLayoutY(player2Image.getLayoutY() - player2Speed);
+            }
+        } else if (pressedKeys.contains(KeyCode.DOWN)) {
+            if (player2Image.getLayoutY() + player2Image.getFitHeight() < sceneHeight - margin &&
+                    !checkCollision(player2Image, 0, player2Speed)) {
+                player2Image.setLayoutY(player2Image.getLayoutY() + player2Speed);
+            }
+        }
+
+        if (pressedKeys.contains(KeyCode.LEFT)) {
+            if (player2Image.getLayoutX() > margin && !checkCollision(player2Image, -player2Speed, 0)) {
+                player2Image.setLayoutX(player2Image.getLayoutX() - player2Speed);
+            }
+        } else if (pressedKeys.contains(KeyCode.RIGHT)) {
+            if (player2Image.getLayoutX() + player2Image.getFitWidth() < sceneWidth - margin &&
+                    !checkCollision(player2Image, player2Speed, 0)) {
+                player2Image.setLayoutX(player2Image.getLayoutX() + player2Speed);
+            }
+        }
+
+        // Gracz 1 rzuca bombę spacją
+        if (pressedKeys.contains(KeyCode.SPACE)) {
+            dropBomb(player1Character, player1Image, (Pane) scene.getRoot());
+            pressedKeys.remove(KeyCode.SPACE);
+        }
+
+        // Gracz 2 rzuca bombę enterem
+        if (pressedKeys.contains(KeyCode.ENTER)) {
+            dropBomb(player2Character, player2Image, (Pane) scene.getRoot());
+            pressedKeys.remove(KeyCode.ENTER);
+        }
+
+        // Sprawdzenie kolizji graczy z płomieniami
+        checkFlameCollision();
+    }
+
+    private void checkFlameCollision() {
+        Pane layout = (Pane) player1Image.getParent();
+        boolean player1Dead = false;
+        boolean player2Dead = false;
+
+        for (var node : layout.getChildren()) {
+            if (node instanceof ImageView) {
+                ImageView flame = (ImageView) node;
+
+                if (flame.getImage().getUrl().contains("flame")) { // Sprawdź, czy to płomień
+                    if (player1Image.getBoundsInParent().intersects(flame.getBoundsInParent())) {
+                        player1Dead = true;
+                    }
+                    if (player2Image.getBoundsInParent().intersects(flame.getBoundsInParent())) {
+                        player2Dead = true;
+                    }
+                }
+            }
+        }
+
+        if (player1Dead && player2Dead) {
+            endGame("Draw! Both players lost!");
+        } else if (player1Dead) {
+            endGame("Player 2 wins!");
+        } else if (player2Dead) {
+            endGame("Player 1 wins!");
+        }
+    }
+
+
+    private void triggerExplosion(Character character, double bombX, double bombY, Pane layout) {
+        try {
+            // Wczytaj obraz płomienia
+            Image flameImage = new Image(getClass().getResource(
+                    "/org/example/explodeitapp/images/flame.png").toExternalForm());
+
+            int explodePower = character.getExplodePower(); // Moc wybuchu w kratkach
+
+            // Generuj płomienie w każdą stronę
+            for (int i = 1; i <= explodePower; i++) {
+                double upY = bombY - i * 50;
+                double downY = bombY + i * 50;
+                double leftX = bombX - i * 50;
+                double rightX = bombX + i * 50;
+
+                // Dodaj płomienie w odpowiednich kierunkach
+                if (upY >= 0) addFlame(bombX, upY, layout, flameImage);
+                if (downY <= layout.getHeight()) addFlame(bombX, downY, layout, flameImage);
+                if (leftX >= 0) addFlame(leftX, bombY, layout, flameImage);
+                if (rightX <= layout.getWidth()) addFlame(rightX, bombY, layout, flameImage);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addFlame(double x, double y, Pane layout, Image flameImage) {
+        ImageView flame = new ImageView(flameImage);
+        flame.setFitWidth(40);
+        flame.setFitHeight(40);
+        flame.setLayoutX(x);
+        flame.setLayoutY(y);
+        layout.getChildren().add(flame);
+
+        // Sprawdź, czy płomień trafia w gracza
+        if (checkPlayerOnFlame(player1Image, x, y)) {
+            endGame("Player 2 wins!");
+        } else if (checkPlayerOnFlame(player2Image, x, y)) {
+            endGame("Player 1 wins!");
+        }
+
+        // Usuń płomień po 1 sekundzie
+        new javafx.animation.Timeline(
+                new javafx.animation.KeyFrame(
+                        javafx.util.Duration.seconds(1),
+                        event -> layout.getChildren().remove(flame)
+                )
+        ).play();
+    }
+    private boolean checkPlayerOnFlame(ImageView player, double flameX, double flameY) {
+        return player.getLayoutX() < flameX + 40 &&
+                player.getLayoutX() + player.getFitWidth() > flameX &&
+                player.getLayoutY() < flameY + 40 &&
+                player.getLayoutY() + player.getFitHeight() > flameY;
+    }
+
+    private void endGame(String winnerMessage) {
+        if (gameOver) return; // Jeśli gra już się zakończyła, pomiń
+        gameOver = true; // Zatrzymaj grę
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Game Over");
+            alert.setHeaderText(null);
+            alert.setContentText(winnerMessage);
+
+            alert.setOnHidden(event -> Platform.exit()); // Zamknij aplikację po zamknięciu alertu
+            alert.show();
+        });
+    }
 
 
 
@@ -262,14 +432,33 @@ public class Main extends Application {
         return false; // Brak kolizji
     }
 
-
-    private void showAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Warning");
+    private void showGameOverAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Game Over");
         alert.setHeaderText(null);
         alert.setContentText(message);
-        alert.showAndWait();
+
+        // Ustaw akcję po zamknięciu alertu
+        alert.setOnHidden(event -> Platform.runLater(() -> {
+            // Zakończ aplikację
+            Platform.exit();
+        }));
+
+        alert.show(); // Używamy `show()` zamiast `showAndWait()`
     }
+
+
+
+    private void showAlert(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Info");
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
 
     public static void main(String[] args) {
         launch();
