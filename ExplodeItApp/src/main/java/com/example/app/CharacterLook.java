@@ -12,6 +12,20 @@ public class CharacterLook {
         this.leftSide = leftSide;
         this.rightSide = rightSide;
     }
+
+    public String getBehind() {
+        return behind;
+    }
+
+    public String getFront() {
+        return front;
+    }
+
+    public String getLeftSide() {
+        return leftSide;
+    }
+
+    public String getRightSide() {
+        return rightSide;
+    }
 }
-
-
