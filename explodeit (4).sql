@@ -429,14 +429,13 @@ ALTER TABLE `mapitem`
 COMMIT;
 
 INSERT INTO `characterlook` (`CharacterLookID`, `head`, `behind`, `front`, `leftSide`, `rightSide`) VALUES
-(1, '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png'),
-(2, '/org/example/explodeitapp/images/mage.png', '/org/example/explodeitapp/images/mage.png', '/org/example/explodeitapp/images/mage.png', '/org/example/explodeitapp/images/mage.png', '/org/example/explodeitapp/images/mage.png'),
-(3, '/org/example/explodeitapp/images/builder.png', '/org/example/explodeitapp/images/builder.png', '/org/example/explodeitapp/images/builder.png', '/org/example/explodeitapp/images/builder.png', '/org/example/explodeitapp/images/builder.png');
+(2, '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png'),
+(3, '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png'),
+(4, '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png', '/org/example/explodeitapp/images/ninja.png');
 
-INSERT INTO `characters` (`CharacterID`, `name`, `characterSpeed`, `explodePower`, `explosionSpeed`, `hp`, `maxBombs`, `CharacterLookID`) VALUES
-(1, 'Ninja', 5, 2, 3, 1, 1, 1),
-(2, 'Mage', 2, 3, 4, 1, 1, 2),
-(3, 'Builder', 3, 2, 4, 1, 2, 3);
+INSERT INTO `characters` (`CharacterID`, `name`, `characterSpeed`, `explodePower`, `explosionSpeed`, `hp`, `CharacterLookID`) VALUES
+(2, 'Ninja', 3, 1, 5, 80, 2),
+(3, 'Ninja2', 7, 3, 1, 100, 3);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

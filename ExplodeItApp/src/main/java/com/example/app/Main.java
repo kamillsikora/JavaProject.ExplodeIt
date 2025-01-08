@@ -75,15 +75,14 @@ public class Main extends Application {
                 }
                 if (selectedMap != null) {
                     selectedMap.loadBlocks();
-                    showCharacterSelection(stage, selectedMap, true);
+                    showPlayer1CharacterSelection(stage, selectedMap);
                 }
             }
         });
     }
 
-    private void showCharacterSelection(Stage stage, Map map, boolean isPlayer1) {
-        String playerLabel = isPlayer1 ? "Player 1: Select Your Character" : "Player 2: Select Your Character";
-        Label characterLabel = new Label(playerLabel);
+    private void showPlayer1CharacterSelection(Stage stage, Map map) {
+        Label characterLabel = new Label("Player 1: Select Your Character");
 
         VBox charactersDisplay = new VBox(10);
         charactersDisplay.setAlignment(Pos.CENTER);
@@ -99,25 +98,14 @@ public class Main extends Application {
             characterImage.setFitHeight(50);
 
             Label characterDetails = new Label(character.getName());
-            Label statsLabel = new Label(
-                    "Speed: " + character.getCharacterSpeed() + "\n" +
-                            "Explosion Power: " + character.getExplodePower() + "\n" +
-                            "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
-                            "Max Bombs: " + character.getMaxBombs()
-            );
 
             Button selectCharacterButton = new Button("Select");
             selectCharacterButton.setOnAction(event -> {
-                if (isPlayer1) {
-                    player1Character = character;
-                    showCharacterSelection(stage, map, false); // Przejdź do wyboru gracza 2
-                } else {
-                    player2Character = character;
-                    showMapWithCharacters(stage, map); // Rozpocznij grę
-                }
+                player1Character = character;
+                showPlayer2CharacterSelection(stage, map);
             });
 
-            characterBox.getChildren().addAll(characterImage, characterDetails, statsLabel, selectCharacterButton);
+            characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
             charactersDisplay.getChildren().add(characterBox);
         }
 
@@ -128,6 +116,40 @@ public class Main extends Application {
         stage.setScene(characterSelectionScene);
     }
 
+    private void showPlayer2CharacterSelection(Stage stage, Map map) {
+        Label characterLabel = new Label("Player 2: Select Your Character");
+
+        VBox charactersDisplay = new VBox(10);
+        charactersDisplay.setAlignment(Pos.CENTER);
+
+        List<Character> characters = Character.fetchCharacters();
+
+        for (Character character : characters) {
+            VBox characterBox = new VBox(5);
+            characterBox.setAlignment(Pos.CENTER);
+
+            ImageView characterImage = new ImageView(new Image(getClass().getResource(character.getLook().getFront()).toExternalForm()));
+            characterImage.setFitWidth(50);
+            characterImage.setFitHeight(50);
+
+            Label characterDetails = new Label(character.getName());
+
+            Button selectCharacterButton = new Button("Select");
+            selectCharacterButton.setOnAction(event -> {
+                player2Character = character;
+                showMapWithCharacters(stage, map);
+            });
+
+            characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
+            charactersDisplay.getChildren().add(characterBox);
+        }
+
+        VBox characterSelectionLayout = new VBox(10, characterLabel, charactersDisplay);
+        characterSelectionLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+
+        Scene characterSelectionScene = new Scene(characterSelectionLayout, 1200, 700);
+        stage.setScene(characterSelectionScene);
+    }
 
     private final List<ImageView> bombs = new ArrayList<>(); // Lista bomb
 
@@ -194,57 +216,30 @@ public class Main extends Application {
 
     private void dropBomb(Character character, ImageView player, Pane layout) {
         try {
-            // Sprawdź liczbę aktywnych bomb przypisanych do danego gracza
-            long activeBombCount = activeBombs.stream()
-                    .filter(bomb -> bomb.getUserData() == character)
-                    .count();
-
-            // Sprawdź, czy gracz nie przekroczył limitu bomb
-            if (activeBombCount >= character.getMaxBombs()) {
-                return; // Nie można postawić kolejnej bomby
-            }
-
-            // Oblicz pozycję bomby na siatce mapy
-            double bombX = Math.round(player.getLayoutX() / 50) * 50;
-            double bombY = Math.round(player.getLayoutY() / 50) * 50;
-
-            // Sprawdź, czy na tej pozycji nie ma już bomby
-            boolean bombAlreadyExists = activeBombs.stream()
-                    .anyMatch(bomb -> bomb.getLayoutX() == bombX && bomb.getLayoutY() == bombY);
-            if (bombAlreadyExists) {
-                return; // Nie można postawić bomby w tym samym miejscu
-            }
-
-            // Wczytaj obraz bomby
             Image bombImage = new Image(getClass().getResource(
                     "/org/example/explodeitapp/images/bomb.png").toExternalForm());
             ImageView bomb = new ImageView(bombImage);
             bomb.setFitWidth(50);
             bomb.setFitHeight(50);
 
+            double bombX = Math.round(player.getLayoutX() / 50) * 50;
+            double bombY = Math.round(player.getLayoutY() / 50) * 50;
+
             bomb.setLayoutX(bombX);
             bomb.setLayoutY(bombY);
-            bomb.setUserData(character); // Przypisz bombę do właściciela (gracza)
 
-            // Dodaj bombę do layoutu i listy aktywnych bomb
             layout.getChildren().add(bomb);
             activeBombs.add(bomb);
+            accessibleBombs.add(bomb); // Na początku bomba jest dostępna dla przejścia
 
-            // Na początku bomba jest dostępna dla przejścia
-            accessibleBombs.add(bomb);
-
-            // Obsługa wybuchu bomby
             int explodeSpeed = character.getExplodeSpeed();
             new javafx.animation.Timeline(
                     new javafx.animation.KeyFrame(
                             javafx.util.Duration.seconds(explodeSpeed),
                             event -> {
-                                // Usuń bombę po wybuchu
                                 layout.getChildren().remove(bomb);
                                 activeBombs.remove(bomb);
-                                accessibleBombs.remove(bomb);
-
-                                // Wywołaj eksplozję
+                                accessibleBombs.remove(bomb); // Usuń z dostępnych bomb
                                 triggerExplosion(character, bombX, bombY, layout);
                             }
                     )
@@ -253,8 +248,6 @@ public class Main extends Application {
             e.printStackTrace();
         }
     }
-
-
 
     private void updatePlayerPositions(Scene scene) {
         if (gameOver) {
