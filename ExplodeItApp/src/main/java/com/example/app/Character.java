@@ -14,8 +14,9 @@ public class Character {
     private int explodeSpeed;
     private CharacterLook look;
     private int hp;
+    private int maxBombs; // Nowy parametr
 
-    public Character(int id, String name, int characterSpeed, int explodePower, int explodeSpeed, CharacterLook look, int hp) {
+    public Character(int id, String name, int characterSpeed, int explodePower, int explodeSpeed, CharacterLook look, int hp, int maxBombs) {
         this.id = id;
         this.name = name;
         this.characterSpeed = characterSpeed;
@@ -23,8 +24,10 @@ public class Character {
         this.explodeSpeed = explodeSpeed;
         this.look = look;
         this.hp = hp;
+        this.maxBombs = maxBombs; // Inicjalizacja maxBombs
     }
 
+    // Gettery
     public int getId() {
         return id;
     }
@@ -53,6 +56,11 @@ public class Character {
         return hp;
     }
 
+    public int getMaxBombs() {
+        return maxBombs; // Getter dla maxBombs
+    }
+
+    // Statyczna metoda do pobierania danych z bazy
     public static List<Character> fetchCharacters() {
         List<Character> characters = new ArrayList<>();
         try (Connection connection = DbConfig.connect()) {
@@ -70,6 +78,7 @@ public class Character {
                     int explodePower = resultSet.getInt("explodePower");
                     int explodeSpeed = resultSet.getInt("explosionSpeed");
                     int hp = resultSet.getInt("hp");
+                    int maxBombs = resultSet.getInt("maxBombs"); // Pobranie maxBombs z bazy danych
 
                     CharacterLook look = new CharacterLook(
                             resultSet.getString("behind"),
@@ -78,7 +87,7 @@ public class Character {
                             resultSet.getString("rightSide")
                     );
 
-                    characters.add(new Character(id, name, characterSpeed, explodePower, explodeSpeed, look, hp));
+                    characters.add(new Character(id, name, characterSpeed, explodePower, explodeSpeed, look, hp, maxBombs));
                 }
             }
         } catch (Exception e) {
