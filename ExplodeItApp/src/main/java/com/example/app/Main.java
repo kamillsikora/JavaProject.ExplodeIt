@@ -85,9 +85,6 @@ public class Main extends Application {
         });
     }
 
-
-
-        Label characterLabel = new Label(playerLabel);
     private void showPlayer1CharacterSelection(Stage stage, Map map) {
         Label characterLabel = new Label("Player 1: Select Your Character");
 
@@ -105,22 +102,9 @@ public class Main extends Application {
             characterImage.setFitHeight(50);
 
             Label characterDetails = new Label(character.getName());
-            Label statsLabel = new Label(
-                    "Speed: " + character.getCharacterSpeed() + "\n" +
-                            "Explosion Power: " + character.getExplodePower() + "\n" +
-                            "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
-                            "Max Bombs: " + character.getMaxBombs()
-            );
 
             Button selectCharacterButton = new Button("Select");
             selectCharacterButton.setOnAction(event -> {
-                if (isPlayer1) {
-                    player1Character = character;
-                    showCharacterSelection(stage, map, false); // Przejdź do wyboru gracza 2
-                } else {
-                    player2Character = character;
-                    showMapWithCharacters(stage, map); // Rozpocznij grę
-                }
                 player1Character = character;
                 showPlayer2CharacterSelection(stage, map);
             });
@@ -160,7 +144,7 @@ public class Main extends Application {
                 showMapWithCharacters(stage, map);
             });
 
-            characterBox.getChildren().addAll(characterImage, characterDetails, statsLabel, selectCharacterButton);
+            characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
             charactersDisplay.getChildren().add(characterBox);
         }
 
@@ -264,9 +248,6 @@ public class Main extends Application {
             ImageView bomb = new ImageView(bombImage);
             bomb.setFitWidth(50);
             bomb.setFitHeight(50);
-
-            double bombX = Math.round(player.getLayoutX() / 50) * 50;
-            double bombY = Math.round(player.getLayoutY() / 50) * 50;
 
             bomb.setLayoutX(bombX);
             bomb.setLayoutY(bombY);
@@ -406,50 +387,55 @@ public class Main extends Application {
         }
     }
 
-
     private void triggerExplosion(Character character, double bombX, double bombY, Pane layout) {
         try {
-            // Wczytaj obraz płomienia
+            // Load the flame image
             Image flameImage = new Image(getClass().getResource("/org/example/explodeitapp/images/flame.png").toExternalForm());
+            int explodePower = character.getExplodePower(); // Explosion range in tiles
 
-            int explodePower = character.getExplodePower(); // Moc wybuchu w kratkach
-
-
-            // Dodaj płomień w miejscu bomby
+            // Add flame at the bomb position
             addFlame(bombX, bombY, layout, flameImage);
-            checkAndDestroyBlock(bombX, bombY, layout); // Sprawdź i usuń blok w miejscu bomby
 
-            // Generuj płomienie w każdą stronę
+            // Generate flames in each direction
+            boolean blockedUp = false, blockedDown = false, blockedLeft = false, blockedRight = false;
             for (int i = 1; i <= explodePower; i++) {
-                double upY = bombY - i * 50;
-                double downY = bombY + i * 50;
-                double leftX = bombX - i * 50;
-                double rightX = bombX + i * 50;
-
-                // Dodaj płomienie w odpowiednich kierunkach
-                if (upY >= 0) {
-                    addFlame(bombX, upY, layout, flameImage);
-                    checkAndDestroyBlock(bombX, upY, layout); // Sprawdź i usuń blok w górę
+                if (!blockedUp) {
+                    blockedUp = addFlameWithBlockCheck(bombX, bombY - i * 50, layout, flameImage);
                 }
-                if (downY <= layout.getHeight()) {
-                    addFlame(bombX, downY, layout, flameImage);
-                    checkAndDestroyBlock(bombX, downY, layout); // Sprawdź i usuń blok w dół
+                if (!blockedDown) {
+                    blockedDown = addFlameWithBlockCheck(bombX, bombY + i * 50, layout, flameImage);
                 }
-                if (leftX >= 0) {
-                    addFlame(leftX, bombY, layout, flameImage);
-                    checkAndDestroyBlock(leftX, bombY, layout); // Sprawdź i usuń blok w lewo
+                if (!blockedLeft) {
+                    blockedLeft = addFlameWithBlockCheck(bombX - i * 50, bombY, layout, flameImage);
                 }
-                if (rightX <= layout.getWidth()) {
-                    addFlame(rightX, bombY, layout, flameImage);
-                    checkAndDestroyBlock(rightX, bombY, layout); // Sprawdź i usuń blok w prawo
+                if (!blockedRight) {
+                    blockedRight = addFlameWithBlockCheck(bombX + i * 50, bombY, layout, flameImage);
                 }
-
-
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    private boolean addFlameWithBlockCheck(double x, double y, Pane layout, Image flameImage) {
+        int posX = (int) (x / 50);
+        int posY = (int) (y / 50);
+
+        for (Block block : selectedMap.getBlocks()) {
+            if (block.getPositionX() == posX && block.getPositionY() == posY) {
+                // Stop flame propagation
+                if (block instanceof DestructibleBlock || block instanceof LuckyBlock) {
+                    checkAndDestroyBlock(x, y, layout); // Destroy block if destructible
+                }
+                return true; // Block encountered, stop further flames
+            }
+        }
+
+        // Add flame if no block encountered
+        addFlame(x, y, layout, flameImage);
+        return false; // No block encountered, continue propagation
+    }
+
 
     private void checkAndDestroyBlock(double x, double y, Pane layout) {
         // Zaokrąglamy pozycje do wielokrotności 50 (zakładając, że każdy blok ma rozmiar 50x50)
