@@ -94,14 +94,18 @@ public class Main extends Application {
         List<Character> characters = Character.fetchCharacters();
 
         for (Character character : characters) {
-            VBox characterBox = new VBox(5);
+            VBox characterBox = new VBox(10);
             characterBox.setAlignment(Pos.CENTER);
 
             ImageView characterImage = new ImageView(new Image(getClass().getResource(character.getLook().getFront()).toExternalForm()));
             characterImage.setFitWidth(50);
             characterImage.setFitHeight(50);
 
-            Label characterDetails = new Label(character.getName());
+            Label characterDetails = new Label(character.getName() + "\n" +
+                    "Speed: " + character.getCharacterSpeed() + "\n" +
+                    "Explosion Power: " + character.getExplodePower() + "\n" +
+                    "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
+                    "Max Bombs: " + character.getMaxBombs());
 
             Button selectCharacterButton = new Button("Select");
             selectCharacterButton.setOnAction(event -> {
@@ -129,14 +133,18 @@ public class Main extends Application {
         List<Character> characters = Character.fetchCharacters();
 
         for (Character character : characters) {
-            VBox characterBox = new VBox(5);
+            VBox characterBox = new VBox(10);
             characterBox.setAlignment(Pos.CENTER);
 
             ImageView characterImage = new ImageView(new Image(getClass().getResource(character.getLook().getFront()).toExternalForm()));
             characterImage.setFitWidth(50);
             characterImage.setFitHeight(50);
 
-            Label characterDetails = new Label(character.getName());
+            Label characterDetails = new Label(character.getName() + "\n" +
+                    "Speed: " + character.getCharacterSpeed() + "\n" +
+                    "Explosion Power: " + character.getExplodePower() + "\n" +
+                    "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
+                    "Max Bombs: " + character.getMaxBombs());
 
             Button selectCharacterButton = new Button("Select");
             selectCharacterButton.setOnAction(event -> {
@@ -282,11 +290,9 @@ public class Main extends Application {
         }
     }
 
-
-
     private void updatePlayerPositions(Scene scene) {
         if (gameOver) {
-            return; // Nie pozwala na ruch po zakończeniu gry
+            return; // Prevent movement after the game ends
         }
 
         double sceneWidth = 1200;
@@ -296,65 +302,61 @@ public class Main extends Application {
         int player1Speed = player1Character.getCharacterSpeed();
         int player2Speed = player2Character.getCharacterSpeed();
 
-        // Obsługa ruchu gracza 1
-        if (pressedKeys.contains(KeyCode.W)) {
+        // Player 1 movement
+        if (pressedKeys.contains(KeyCode.W) && !pressedKeys.contains(KeyCode.A) && !pressedKeys.contains(KeyCode.D)) {
             if (player1Image.getLayoutY() > margin && !checkCollision(player1Image, 0, -player1Speed)) {
                 player1Image.setLayoutY(player1Image.getLayoutY() - player1Speed);
             }
-        } else if (pressedKeys.contains(KeyCode.S)) {
+        } else if (pressedKeys.contains(KeyCode.S) && !pressedKeys.contains(KeyCode.A) && !pressedKeys.contains(KeyCode.D)) {
             if (player1Image.getLayoutY() + player1Image.getFitHeight() < sceneHeight - margin &&
                     !checkCollision(player1Image, 0, player1Speed)) {
                 player1Image.setLayoutY(player1Image.getLayoutY() + player1Speed);
             }
-        }
-
-        if (pressedKeys.contains(KeyCode.A)) {
+        } else if (pressedKeys.contains(KeyCode.A) && !pressedKeys.contains(KeyCode.W) && !pressedKeys.contains(KeyCode.S)) {
             if (player1Image.getLayoutX() > margin && !checkCollision(player1Image, -player1Speed, 0)) {
                 player1Image.setLayoutX(player1Image.getLayoutX() - player1Speed);
             }
-        } else if (pressedKeys.contains(KeyCode.D)) {
+        } else if (pressedKeys.contains(KeyCode.D) && !pressedKeys.contains(KeyCode.W) && !pressedKeys.contains(KeyCode.S)) {
             if (player1Image.getLayoutX() + player1Image.getFitWidth() < sceneWidth - margin &&
                     !checkCollision(player1Image, player1Speed, 0)) {
                 player1Image.setLayoutX(player1Image.getLayoutX() + player1Speed);
             }
         }
 
-        // Obsługa ruchu gracza 2
-        if (pressedKeys.contains(KeyCode.UP)) {
+        // Player 2 movement
+        if (pressedKeys.contains(KeyCode.UP) && !pressedKeys.contains(KeyCode.LEFT) && !pressedKeys.contains(KeyCode.RIGHT)) {
             if (player2Image.getLayoutY() > margin && !checkCollision(player2Image, 0, -player2Speed)) {
                 player2Image.setLayoutY(player2Image.getLayoutY() - player2Speed);
             }
-        } else if (pressedKeys.contains(KeyCode.DOWN)) {
+        } else if (pressedKeys.contains(KeyCode.DOWN) && !pressedKeys.contains(KeyCode.LEFT) && !pressedKeys.contains(KeyCode.RIGHT)) {
             if (player2Image.getLayoutY() + player2Image.getFitHeight() < sceneHeight - margin &&
                     !checkCollision(player2Image, 0, player2Speed)) {
                 player2Image.setLayoutY(player2Image.getLayoutY() + player2Speed);
             }
-        }
-
-        if (pressedKeys.contains(KeyCode.LEFT)) {
+        } else if (pressedKeys.contains(KeyCode.LEFT) && !pressedKeys.contains(KeyCode.UP) && !pressedKeys.contains(KeyCode.DOWN)) {
             if (player2Image.getLayoutX() > margin && !checkCollision(player2Image, -player2Speed, 0)) {
                 player2Image.setLayoutX(player2Image.getLayoutX() - player2Speed);
             }
-        } else if (pressedKeys.contains(KeyCode.RIGHT)) {
+        } else if (pressedKeys.contains(KeyCode.RIGHT) && !pressedKeys.contains(KeyCode.UP) && !pressedKeys.contains(KeyCode.DOWN)) {
             if (player2Image.getLayoutX() + player2Image.getFitWidth() < sceneWidth - margin &&
                     !checkCollision(player2Image, player2Speed, 0)) {
                 player2Image.setLayoutX(player2Image.getLayoutX() + player2Speed);
             }
         }
 
-        // Gracz 1 rzuca bombę spacją
+        // Player 1 drops a bomb with SPACE
         if (pressedKeys.contains(KeyCode.SPACE)) {
             dropBomb(player1Character, player1Image, (Pane) scene.getRoot());
             pressedKeys.remove(KeyCode.SPACE);
         }
 
-        // Gracz 2 rzuca bombę enterem
+        // Player 2 drops a bomb with ENTER
         if (pressedKeys.contains(KeyCode.ENTER)) {
             dropBomb(player2Character, player2Image, (Pane) scene.getRoot());
             pressedKeys.remove(KeyCode.ENTER);
         }
 
-        // Sprawdzenie kolizji graczy z płomieniami
+        // Check collisions between players and flames
         checkFlameCollision();
     }
 
