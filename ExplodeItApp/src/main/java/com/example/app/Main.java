@@ -35,7 +35,7 @@ public class Main extends Application {
     private boolean gameOver = false;
     private final List<ImageView> activeBombs = new ArrayList<>();
     private final Set<ImageView> accessibleBombs = new HashSet<>();
-
+    private Map selectedMap = null;
 
 
     @Override
@@ -66,7 +66,8 @@ public class Main extends Application {
             if (selectedMapName == null) {
                 showAlert("Please select a map!");
             } else {
-                Map selectedMap = null;
+                // Przypisanie wybranej mapy do zmiennej selectedMap
+                selectedMap = null;
                 for (Map map : maps) {
                     if (map.getName().equals(selectedMapName)) {
                         selectedMap = map;
@@ -74,16 +75,21 @@ public class Main extends Application {
                     }
                 }
                 if (selectedMap != null) {
+                    // Ładowanie bloków dla wybranej mapy
                     selectedMap.loadBlocks();
-                    showCharacterSelection(stage, selectedMap, true);
+
+                    // Przechodzimy do wyboru gracza
+                    showPlayer1CharacterSelection(stage, selectedMap);
                 }
             }
         });
     }
 
-    private void showCharacterSelection(Stage stage, Map map, boolean isPlayer1) {
-        String playerLabel = isPlayer1 ? "Player 1: Select Your Character" : "Player 2: Select Your Character";
+
+
         Label characterLabel = new Label(playerLabel);
+    private void showPlayer1CharacterSelection(Stage stage, Map map) {
+        Label characterLabel = new Label("Player 1: Select Your Character");
 
         VBox charactersDisplay = new VBox(10);
         charactersDisplay.setAlignment(Pos.CENTER);
@@ -115,6 +121,43 @@ public class Main extends Application {
                     player2Character = character;
                     showMapWithCharacters(stage, map); // Rozpocznij grę
                 }
+                player1Character = character;
+                showPlayer2CharacterSelection(stage, map);
+            });
+
+            characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
+            charactersDisplay.getChildren().add(characterBox);
+        }
+
+        VBox characterSelectionLayout = new VBox(10, characterLabel, charactersDisplay);
+        characterSelectionLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+
+        Scene characterSelectionScene = new Scene(characterSelectionLayout, 1200, 700);
+        stage.setScene(characterSelectionScene);
+    }
+
+    private void showPlayer2CharacterSelection(Stage stage, Map map) {
+        Label characterLabel = new Label("Player 2: Select Your Character");
+
+        VBox charactersDisplay = new VBox(10);
+        charactersDisplay.setAlignment(Pos.CENTER);
+
+        List<Character> characters = Character.fetchCharacters();
+
+        for (Character character : characters) {
+            VBox characterBox = new VBox(5);
+            characterBox.setAlignment(Pos.CENTER);
+
+            ImageView characterImage = new ImageView(new Image(getClass().getResource(character.getLook().getFront()).toExternalForm()));
+            characterImage.setFitWidth(50);
+            characterImage.setFitHeight(50);
+
+            Label characterDetails = new Label(character.getName());
+
+            Button selectCharacterButton = new Button("Select");
+            selectCharacterButton.setOnAction(event -> {
+                player2Character = character;
+                showMapWithCharacters(stage, map);
             });
 
             characterBox.getChildren().addAll(characterImage, characterDetails, statsLabel, selectCharacterButton);
@@ -222,6 +265,9 @@ public class Main extends Application {
             bomb.setFitWidth(50);
             bomb.setFitHeight(50);
 
+            double bombX = Math.round(player.getLayoutX() / 50) * 50;
+            double bombY = Math.round(player.getLayoutY() / 50) * 50;
+
             bomb.setLayoutX(bombX);
             bomb.setLayoutY(bombY);
             bomb.setUserData(character); // Przypisz bombę do właściciela (gracza)
@@ -229,6 +275,7 @@ public class Main extends Application {
             // Dodaj bombę do layoutu i listy aktywnych bomb
             layout.getChildren().add(bomb);
             activeBombs.add(bomb);
+            accessibleBombs.add(bomb); // Na początku bomba jest dostępna dla przejścia
 
             // Na początku bomba jest dostępna dla przejścia
             accessibleBombs.add(bomb);
@@ -363,13 +410,14 @@ public class Main extends Application {
     private void triggerExplosion(Character character, double bombX, double bombY, Pane layout) {
         try {
             // Wczytaj obraz płomienia
-            Image flameImage = new Image(getClass().getResource(
-                    "/org/example/explodeitapp/images/flame.png").toExternalForm());
+            Image flameImage = new Image(getClass().getResource("/org/example/explodeitapp/images/flame.png").toExternalForm());
 
             int explodePower = character.getExplodePower(); // Moc wybuchu w kratkach
 
+
             // Dodaj płomień w miejscu bomby
             addFlame(bombX, bombY, layout, flameImage);
+            checkAndDestroyBlock(bombX, bombY, layout); // Sprawdź i usuń blok w miejscu bomby
 
             // Generuj płomienie w każdą stronę
             for (int i = 1; i <= explodePower; i++) {
@@ -379,13 +427,61 @@ public class Main extends Application {
                 double rightX = bombX + i * 50;
 
                 // Dodaj płomienie w odpowiednich kierunkach
-                if (upY >= 0) addFlame(bombX, upY, layout, flameImage);
-                if (downY <= layout.getHeight()) addFlame(bombX, downY, layout, flameImage);
-                if (leftX >= 0) addFlame(leftX, bombY, layout, flameImage);
-                if (rightX <= layout.getWidth()) addFlame(rightX, bombY, layout, flameImage);
+                if (upY >= 0) {
+                    addFlame(bombX, upY, layout, flameImage);
+                    checkAndDestroyBlock(bombX, upY, layout); // Sprawdź i usuń blok w górę
+                }
+                if (downY <= layout.getHeight()) {
+                    addFlame(bombX, downY, layout, flameImage);
+                    checkAndDestroyBlock(bombX, downY, layout); // Sprawdź i usuń blok w dół
+                }
+                if (leftX >= 0) {
+                    addFlame(leftX, bombY, layout, flameImage);
+                    checkAndDestroyBlock(leftX, bombY, layout); // Sprawdź i usuń blok w lewo
+                }
+                if (rightX <= layout.getWidth()) {
+                    addFlame(rightX, bombY, layout, flameImage);
+                    checkAndDestroyBlock(rightX, bombY, layout); // Sprawdź i usuń blok w prawo
+                }
+
+
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void checkAndDestroyBlock(double x, double y, Pane layout) {
+        // Zaokrąglamy pozycje do wielokrotności 50 (zakładając, że każdy blok ma rozmiar 50x50)
+        int posX = (int) (x / 50);
+        int posY = (int) (y / 50);
+
+        for (Block blockAtPosition : selectedMap.getBlocks()) {
+            if (blockAtPosition.getPositionX() == posX && blockAtPosition.getPositionY() == posY) {
+                if (blockAtPosition instanceof LuckyBlock || blockAtPosition instanceof DestructibleBlock) {
+                    // Usuwamy blok z mapy logicznej
+                    selectedMap.removeBlock(blockAtPosition);
+
+                    // Usuwamy odpowiadający mu Rectangle z listy blockRectangles
+                    blockRectangles.removeIf(rectangle -> {
+                        // Usuwamy blok, jeśli jego pozycja w layout odpowiada usuniętemu blokowi
+                        return rectangle.getX() == blockAtPosition.getPositionX() * 50
+                                && rectangle.getY() == blockAtPosition.getPositionY() * 50;
+                    });
+
+                    // Usuwamy blok z layoutu
+                    layout.getChildren().removeIf(node -> {
+                        if (node instanceof Rectangle) {
+                            Rectangle blockRect = (Rectangle) node;
+                            return blockRect.getX() == blockAtPosition.getPositionX() * 50
+                                    && blockRect.getY() == blockAtPosition.getPositionY() * 50;
+                        }
+                        return false;
+                    });
+
+                    break; // Przerywamy pętlę po usunięciu bloku
+                }
+            }
         }
     }
 
@@ -413,6 +509,7 @@ public class Main extends Application {
                 )
         ).play();
     }
+
     private boolean checkPlayerOnFlame(ImageView player, double flameX, double flameY) {
         return player.getLayoutX() < flameX + 40 &&
                 player.getLayoutX() + player.getFitWidth() > flameX &&
