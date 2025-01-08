@@ -35,8 +35,7 @@ public class Main extends Application {
     private boolean gameOver = false;
     private final List<ImageView> activeBombs = new ArrayList<>();
     private final Set<ImageView> accessibleBombs = new HashSet<>();
-
-
+    private Map selectedMap = null;
 
     @Override
     public void start(Stage stage) {
@@ -66,7 +65,8 @@ public class Main extends Application {
             if (selectedMapName == null) {
                 showAlert("Please select a map!");
             } else {
-                Map selectedMap = null;
+                // Przypisanie wybranej mapy do zmiennej selectedMap
+                selectedMap = null;
                 for (Map map : maps) {
                     if (map.getName().equals(selectedMapName)) {
                         selectedMap = map;
@@ -74,12 +74,17 @@ public class Main extends Application {
                     }
                 }
                 if (selectedMap != null) {
+                    // Ładowanie bloków dla wybranej mapy
                     selectedMap.loadBlocks();
+
+                    // Przechodzimy do wyboru gracza
                     showPlayer1CharacterSelection(stage, selectedMap);
                 }
             }
         });
     }
+
+
 
     private void showPlayer1CharacterSelection(Stage stage, Map map) {
         Label characterLabel = new Label("Player 1: Select Your Character");
@@ -356,13 +361,14 @@ public class Main extends Application {
     private void triggerExplosion(Character character, double bombX, double bombY, Pane layout) {
         try {
             // Wczytaj obraz płomienia
-            Image flameImage = new Image(getClass().getResource(
-                    "/org/example/explodeitapp/images/flame.png").toExternalForm());
+            Image flameImage = new Image(getClass().getResource("/org/example/explodeitapp/images/flame.png").toExternalForm());
 
             int explodePower = character.getExplodePower(); // Moc wybuchu w kratkach
 
+
             // Dodaj płomień w miejscu bomby
             addFlame(bombX, bombY, layout, flameImage);
+            checkAndDestroyBlock(bombX, bombY, layout); // Sprawdź i usuń blok w miejscu bomby
 
             // Generuj płomienie w każdą stronę
             for (int i = 1; i <= explodePower; i++) {
@@ -372,13 +378,61 @@ public class Main extends Application {
                 double rightX = bombX + i * 50;
 
                 // Dodaj płomienie w odpowiednich kierunkach
-                if (upY >= 0) addFlame(bombX, upY, layout, flameImage);
-                if (downY <= layout.getHeight()) addFlame(bombX, downY, layout, flameImage);
-                if (leftX >= 0) addFlame(leftX, bombY, layout, flameImage);
-                if (rightX <= layout.getWidth()) addFlame(rightX, bombY, layout, flameImage);
+                if (upY >= 0) {
+                    addFlame(bombX, upY, layout, flameImage);
+                    checkAndDestroyBlock(bombX, upY, layout); // Sprawdź i usuń blok w górę
+                }
+                if (downY <= layout.getHeight()) {
+                    addFlame(bombX, downY, layout, flameImage);
+                    checkAndDestroyBlock(bombX, downY, layout); // Sprawdź i usuń blok w dół
+                }
+                if (leftX >= 0) {
+                    addFlame(leftX, bombY, layout, flameImage);
+                    checkAndDestroyBlock(leftX, bombY, layout); // Sprawdź i usuń blok w lewo
+                }
+                if (rightX <= layout.getWidth()) {
+                    addFlame(rightX, bombY, layout, flameImage);
+                    checkAndDestroyBlock(rightX, bombY, layout); // Sprawdź i usuń blok w prawo
+                }
+
+
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void checkAndDestroyBlock(double x, double y, Pane layout) {
+        // Zaokrąglamy pozycje do wielokrotności 50 (zakładając, że każdy blok ma rozmiar 50x50)
+        int posX = (int) (x / 50);
+        int posY = (int) (y / 50);
+
+        for (Block blockAtPosition : selectedMap.getBlocks()) {
+            if (blockAtPosition.getPositionX() == posX && blockAtPosition.getPositionY() == posY) {
+                if (blockAtPosition instanceof LuckyBlock || blockAtPosition instanceof DestructibleBlock) {
+                    // Usuwamy blok z mapy logicznej
+                    selectedMap.removeBlock(blockAtPosition);
+
+                    // Usuwamy odpowiadający mu Rectangle z listy blockRectangles
+                    blockRectangles.removeIf(rectangle -> {
+                        // Usuwamy blok, jeśli jego pozycja w layout odpowiada usuniętemu blokowi
+                        return rectangle.getX() == blockAtPosition.getPositionX() * 50
+                                && rectangle.getY() == blockAtPosition.getPositionY() * 50;
+                    });
+
+                    // Usuwamy blok z layoutu
+                    layout.getChildren().removeIf(node -> {
+                        if (node instanceof Rectangle) {
+                            Rectangle blockRect = (Rectangle) node;
+                            return blockRect.getX() == blockAtPosition.getPositionX() * 50
+                                    && blockRect.getY() == blockAtPosition.getPositionY() * 50;
+                        }
+                        return false;
+                    });
+
+                    break; // Przerywamy pętlę po usunięciu bloku
+                }
+            }
         }
     }
 
@@ -406,6 +460,7 @@ public class Main extends Application {
                 )
         ).play();
     }
+
     private boolean checkPlayerOnFlame(ImageView player, double flameX, double flameY) {
         return player.getLayoutX() < flameX + 40 &&
                 player.getLayoutX() + player.getFitWidth() > flameX &&

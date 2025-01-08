@@ -84,6 +84,21 @@ public class Map {
         }
     }
 
+
+    public Block getBlockAtPosition(double x, double y) {
+        for (Block block : blocks) {
+            if (block.getPositionX() == x && block.getPositionY() == y) {
+                return block;
+            }
+        }
+        return null; // Brak bloku na tej pozycji
+    }
+
+    public void removeBlock(Block block) {
+        blocks.remove(block);
+    }
+
+
     //Helper to create a com.example.app.Block instance from the type
     private Block createBlockFromResultSet(String type, String color) {
         switch (type) {
