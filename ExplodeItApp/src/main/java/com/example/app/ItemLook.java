@@ -6,4 +6,7 @@ public class ItemLook {
     public ItemLook(String look){
         this.look = look;
     }
+    public String getLook() {
+        return look;
+    }
 }

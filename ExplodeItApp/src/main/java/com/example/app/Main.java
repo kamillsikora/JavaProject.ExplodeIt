@@ -17,10 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Main extends Application {
 
@@ -116,7 +113,6 @@ public class Main extends Application {
             characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
             charactersDisplay.getChildren().add(characterBox);
         }
-
         VBox characterSelectionLayout = new VBox(10, characterLabel, charactersDisplay);
         characterSelectionLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
@@ -360,6 +356,7 @@ public class Main extends Application {
 
         // Check collisions between players and flames
         checkFlameCollision();
+        checkPlayerPickUpItem();
     }
 
     private void checkFlameCollision() {
@@ -434,7 +431,6 @@ public class Main extends Application {
                 return true; // Block encountered, stop further flames
             }
         }
-
         // Add flame if no block encountered
         addFlame(x, y, layout, flameImage);
         return false; // No block encountered, continue propagation
@@ -468,13 +464,79 @@ public class Main extends Application {
                         }
                         return false;
                     });
+                    if (blockAtPosition instanceof LuckyBlock) {
+                        addItem(blockAtPosition.getPositionX() * 50, blockAtPosition.getPositionY() * 50, layout);
+                    }
 
                     break; // Przerywamy pętlę po usunięciu bloku
                 }
             }
         }
     }
+    //code for items----------------------------------------------------------------------------------------------------
+    private void addItem(double x, double y, Pane layout) {
+        int itemid = getRandomNumber();
+        Image itemImage = new Image(getClass().getResource(Item.getItemLook(itemid)).toExternalForm());
+        // Create an ImageView for the item
+        ImageView item = new ImageView(itemImage);
+        item.setFitWidth(50);  // Assuming the size of the item is 50x50
+        item.setFitHeight(50);
+        item.setLayoutX(x);  // Set the X position based on the bomb's position
+        item.setLayoutY(y);  // Set the Y position based on the bomb's position
+        // Add the item to the layout (map)
+        layout.getChildren().add(item);
+        player1Image.toFront();
+        player2Image.toFront();
 
+        new javafx.animation.Timeline(
+                new javafx.animation.KeyFrame(
+                        javafx.util.Duration.seconds(8),
+                        event -> layout.getChildren().remove(item)
+                )
+        ).play();
+    }
+    public static int getRandomNumber() {
+        Random rand = new Random();
+        double chance = rand.nextDouble();
+        if (chance < 0.65) {
+            return 1;
+        } else if (chance < 0.90) {
+            return 2;
+        } else {
+            return 3;
+        }
+    }
+    private void checkPlayerPickUpItem() {
+        // Assuming layout is the Pane that holds both the player and the items
+        Pane layout = (Pane) player1Image.getParent();
+
+        for (var node : layout.getChildren()) {
+            if (node instanceof ImageView) {
+                ImageView item = (ImageView) node;
+
+                // Check if this ImageView is the item (you can customize the condition here)
+                if (item.getImage().getUrl().contains("item")) {
+
+                    // Check if player 1 intersects with the item
+                    if (player1Image.getBoundsInParent().intersects(item.getBoundsInParent())) {
+                        System.out.println("Item picked up by Player 1!");
+                        layout.getChildren().remove(item); // Remove the item from the layout
+                        break;  // Exit loop after removing the item (since it can only be picked up once)
+                    }
+
+                    // Check if player 2 intersects with the item
+                    if (player2Image.getBoundsInParent().intersects(item.getBoundsInParent())) {
+                        System.out.println("Item picked up by Player 2!");
+                        layout.getChildren().remove(item); // Remove the item from the layout
+                        break;  // Exit loop after removing the item
+                    }
+                }
+            }
+        }
+    }
+
+
+    //----------------------------------------------------------------------------------------------------------------------
 
     private void addFlame(double x, double y, Pane layout, Image flameImage) {
         ImageView flame = new ImageView(flameImage);
