@@ -3,6 +3,7 @@ package com.example.app;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -12,8 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
@@ -34,7 +34,7 @@ public class Main extends Application {
     private final Set<ImageView> accessibleBombs = new HashSet<>();
     private Map selectedMap = null;
 
-    private final List<Item> items = new ArrayList<>();  // List to store items
+    private final List<Item> items = new ArrayList<>();
 
 
     @Override
@@ -162,12 +162,12 @@ public class Main extends Application {
     }
 
 
-    private final List<ImageView> bombs = new ArrayList<>(); // Lista bomb
+    private final List<ImageView> bombs = new ArrayList<>();
 
     private void showMapWithCharacters(Stage stage, Map map) {
         Pane layout = new Pane();
 
-        // Ustaw tło na podstawie mapy
+        // Set the background based on the map
         String colorOrImage = map.getColor().trim();
         if (colorOrImage.startsWith("http")) {
             layout.setStyle("-fx-background-image: url('" + colorOrImage + "'); -fx-background-size: cover;");
@@ -200,30 +200,56 @@ public class Main extends Application {
         // Add players to the layout
         layout.getChildren().addAll(player1Image, player2Image);
 
-        Scene scene = new Scene(layout, 1200, 700);
+        Label player1HpLabel = new Label("Player 1 HP: " + player1Character.getHp());
+        Label player2HpLabel = new Label("Player 2 HP: " + player2Character.getHp());
+        player1HpLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
+        player2HpLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
 
-        scene.setOnKeyPressed(event -> {
-            pressedKeys.add(event.getCode());
-            if (event.getCode() == KeyCode.SPACE) {
-                dropBomb(player1Character, player1Image, layout); // Przekazuje postać gracza 1
-            }
-            if (event.getCode() == KeyCode.ENTER) {
-                dropBomb(player2Character, player2Image, layout); // Przekazuje postać gracza 2
-            }
-        });
+        HBox hpPanel = new HBox();
+        hpPanel.setPadding(new Insets(10));
+        hpPanel.setSpacing(50);
+        hpPanel.setStyle("-fx-background-color: black;");
+        hpPanel.setPrefHeight(50);
 
-        scene.setOnKeyReleased(event -> pressedKeys.remove(event.getCode()));
+        HBox.setHgrow(player1HpLabel, Priority.ALWAYS);
+        HBox.setHgrow(player2HpLabel, Priority.ALWAYS);
+        player1HpLabel.setAlignment(Pos.CENTER_LEFT);
+        player2HpLabel.setAlignment(Pos.CENTER_RIGHT);
+        hpPanel.setAlignment(Pos.CENTER);
+
+        hpPanel.getChildren().addAll(player1HpLabel, player2HpLabel);
+
+        BorderPane borderPane = new BorderPane();
+        borderPane.setCenter(layout);
+        borderPane.setBottom(hpPanel);
+
+        Scene scene = new Scene(borderPane, 1200, 750);
 
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 updatePlayerPositions(scene);
+                player1HpLabel.setText("Player 1 HP: " + player1Character.getHp());
+                player2HpLabel.setText("Player 2 HP: " + player2Character.getHp());
             }
         };
         timer.start();
 
+        scene.setOnKeyPressed(event -> {
+            pressedKeys.add(event.getCode());
+            if (event.getCode() == KeyCode.SPACE) {
+                dropBomb(player1Character, player1Image, layout); // Pass player 1 character
+            }
+            if (event.getCode() == KeyCode.ENTER) {
+                dropBomb(player2Character, player2Image, layout); // Pass player 2 character
+            }
+        });
+
+        scene.setOnKeyReleased(event -> pressedKeys.remove(event.getCode()));
+
         stage.setScene(scene);
     }
+
 
     private void dropBomb(Character character, ImageView player, Pane layout) {
         try {
@@ -360,11 +386,13 @@ public class Main extends Application {
         checkFlameCollision();
         checkPlayerPickUpItem();
     }
-
+    private long lastPlayer1DamageTime = 0;
+    private long lastPlayer2DamageTime = 0;
     private void checkFlameCollision() {
         Pane layout = (Pane) player1Image.getParent();
         boolean player1Dead = false;
         boolean player2Dead = false;
+        long currentTime = System.currentTimeMillis();
 
         for (var node : layout.getChildren()) {
             if (node instanceof ImageView) {
@@ -372,10 +400,24 @@ public class Main extends Application {
 
                 if (flame.getImage().getUrl().contains("flame")) { // Sprawdź, czy to płomień
                     if (player1Image.getBoundsInParent().intersects(flame.getBoundsInParent())) {
-                        player1Dead = true;
+                        if (currentTime - lastPlayer1DamageTime >= 500) { // 0.5-second cooldown
+                            player1Character.decrementHP();
+                            lastPlayer1DamageTime = currentTime; // Update last damage time for Player 1
+                            System.out.println("Player 1 HP: " + player1Character.getHp());
+                            if (player1Character.getHp() == 0) {
+                                player1Dead = true;
+                            }
+                        }
                     }
                     if (player2Image.getBoundsInParent().intersects(flame.getBoundsInParent())) {
-                        player2Dead = true;
+                        if (currentTime - lastPlayer2DamageTime >= 500) { // 0.5-second cooldown
+                            player2Character.decrementHP();
+                            lastPlayer2DamageTime = currentTime; // Update last damage time for Player 2
+                            System.out.println("Player 2 HP: " + player2Character.getHp());
+                            if (player2Character.getHp() == 0) {
+                                player2Dead = true;
+                            }
+                        }
                     }
                 }
             }
