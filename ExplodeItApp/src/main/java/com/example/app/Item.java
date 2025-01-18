@@ -6,8 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class Item {
-    private String name;
-    private ItemLook look;
+    private int itemID;
     private int timeOfEffect;
 
     private int dropProbability;
@@ -20,16 +19,28 @@ public class Item {
 
     private int charactersHp;
 
-    public Item(String name, ItemLook look, int timeOfEffect, int dropProbability, int charactersSpeed, int charactersPower, int exposionsSpeed, int charactersHp){
-        this.name = name;
-        this.look = look;
-        this.timeOfEffect = timeOfEffect;
-        this.dropProbability = dropProbability;
-        this.charactersSpeed = charactersSpeed;
-        this.charactersPower = charactersPower;
-        this.explosionsSpeed = exposionsSpeed;
-        this.charactersHp = charactersHp;
+    private double x;
+    private double y;
+
+    public Item(int itemID, double x, double y) {
+        this.itemID = itemID;
+        this.x = x;
+        this.y = y;
+
+        // Fetch item data from the database
+        int[] itemData = getItemData(itemID);
+
+        if (itemData != null) {
+            this.timeOfEffect = itemData[0];
+            this.charactersSpeed = itemData[1];
+            this.charactersPower = itemData[2];
+            this.explosionsSpeed = itemData[3];
+            this.charactersHp = itemData[4];
+        } else {
+            throw new IllegalArgumentException("Invalid itemID: " + itemID);
+        }
     }
+
 
     public static String getItemLook(int itemID) {
         String sql = "SELECT i.ItemLookID, il.look FROM Item i " +
@@ -63,7 +74,7 @@ public class Item {
         return null; // Return null if the item look is not found
     }
     public static int[] getItemData(int itemID) {
-        String sql = "SELECT timeOfEffect, charactersSpeed, charactersPower, explosionsSpeed, charactersHp " +
+        String sql = "SELECT timeOfEffect, CharacterSpeed, ExplodePower, ExplosionSpeed, hp " +
                 "FROM Item WHERE ItemID = ?";
 
         // Declare an array to hold the retrieved data
@@ -83,10 +94,10 @@ public class Item {
             if (resultSet.next()) {
                 // Retrieve the data and store it in the array
                 itemData[0] = resultSet.getInt("timeOfEffect");
-                itemData[1] = resultSet.getInt("charactersSpeed");
-                itemData[2] = resultSet.getInt("charactersPower");
-                itemData[3] = resultSet.getInt("explosionsSpeed");
-                itemData[4] = resultSet.getInt("charactersHp");
+                itemData[1] = resultSet.getInt("CharacterSpeed");
+                itemData[2] = resultSet.getInt("ExplodePower");
+                itemData[3] = resultSet.getInt("ExplosionSpeed");
+                itemData[4] = resultSet.getInt("hp");
 
                 return itemData;  // Return the array containing the retrieved data
             } else {
@@ -99,8 +110,41 @@ public class Item {
         return null; // Return null if the item is not found
     }
 
+    //getters
+    public int getItemID() {
+        return itemID;
+    }
 
+    public int getTimeOfEffect() {
+        return timeOfEffect;
+    }
 
+    public int getDropProbability() {
+        return dropProbability;
+    }
 
+    public int getCharactersSpeed() {
+        return charactersSpeed;
+    }
+
+    public int getCharactersPower() {
+        return charactersPower;
+    }
+
+    public int getExplosionsSpeed() {
+        return explosionsSpeed;
+    }
+
+    public int getCharactersHp() {
+        return charactersHp;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
 
 }

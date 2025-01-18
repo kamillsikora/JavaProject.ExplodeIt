@@ -16,6 +16,12 @@ public class Character {
     private int hp;
     private int maxBombs; // Nowy parametr
 
+    //parameters for item pickup functionality
+    private int originalCharacterSpeed;
+    private int originalExplodePower;
+    private int originalExplodeSpeed;
+    private int originalHp;
+
     public Character(int id, String name, int characterSpeed, int explodePower, int explodeSpeed, CharacterLook look, int hp, int maxBombs) {
         this.id = id;
         this.name = name;
@@ -25,6 +31,12 @@ public class Character {
         this.look = look;
         this.hp = hp;
         this.maxBombs = maxBombs; // Inicjalizacja maxBombs
+
+        //for items functionality
+        this.originalCharacterSpeed = characterSpeed;
+        this.originalExplodePower = explodePower;
+        this.originalExplodeSpeed = explodeSpeed;
+        this.originalHp = hp;
     }
 
     // Gettery
@@ -95,4 +107,19 @@ public class Character {
         }
         return characters;
     }
+    public void applyItemEffects(Item item) {
+        this.characterSpeed += item.getCharactersSpeed();
+        this.explodePower += item.getCharactersPower();
+        this.explodeSpeed += item.getExplosionsSpeed();
+        this.hp += item.getCharactersHp();
+    }
+
+    // Revert parameters after the item's effect duration ends
+    public void revertToOriginalStats() {
+        this.characterSpeed = originalCharacterSpeed;
+        this.explodePower = originalExplodePower;
+        this.explodeSpeed = originalExplodeSpeed;
+        this.hp = originalHp;
+    }
+
 }

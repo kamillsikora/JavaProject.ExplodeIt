@@ -34,6 +34,8 @@ public class Main extends Application {
     private final Set<ImageView> accessibleBombs = new HashSet<>();
     private Map selectedMap = null;
 
+    private final List<Item> items = new ArrayList<>();  // List to store items
+
 
     @Override
     public void start(Stage stage) {
@@ -476,6 +478,9 @@ public class Main extends Application {
     //code for items----------------------------------------------------------------------------------------------------
     private void addItem(double x, double y, Pane layout) {
         int itemid = getRandomNumber();
+        Item newItem = new Item(itemid, x, y);
+        items.add(newItem);
+        //image of the item being created and added
         Image itemImage = new Image(getClass().getResource(Item.getItemLook(itemid)).toExternalForm());
         // Create an ImageView for the item
         ImageView item = new ImageView(itemImage);
@@ -506,7 +511,7 @@ public class Main extends Application {
             return 3;
         }
     }
-    private void checkPlayerPickUpItem() {
+    /*private void checkPlayerPickUpItem() {
         // Assuming layout is the Pane that holds both the player and the items
         Pane layout = (Pane) player1Image.getParent();
 
@@ -533,7 +538,57 @@ public class Main extends Application {
                 }
             }
         }
+    }*/
+
+    private void checkPlayerPickUpItem() {
+        Pane layout = (Pane) player1Image.getParent();
+        List<Item> itemsToRemove = new ArrayList<>();
+
+        for (Item item : items) {
+            // Check if Player 1 intersects with the item
+            if (player1Image.getBoundsInParent().intersects(item.getX(), item.getY(), 50, 50)) {
+                System.out.println("Item picked up by Player 1!");
+                player1Character.applyItemEffects(item);
+
+                // Schedule reverting the effects after the item's duration
+                new javafx.animation.Timeline(
+                        new javafx.animation.KeyFrame(
+                                javafx.util.Duration.seconds(item.getTimeOfEffect()),
+                                event -> player1Character.revertToOriginalStats()
+                        )
+                ).play();
+
+                itemsToRemove.add(item); // Mark for removal
+            }
+
+            // Check if Player 2 intersects with the item
+            if (player2Image.getBoundsInParent().intersects(item.getX(), item.getY(), 50, 50)) {
+                System.out.println("Item picked up by Player 2!");
+                player2Character.applyItemEffects(item);
+
+                // Schedule reverting the effects after the item's duration
+                new javafx.animation.Timeline(
+                        new javafx.animation.KeyFrame(
+                                javafx.util.Duration.seconds(item.getTimeOfEffect()),
+                                event -> player2Character.revertToOriginalStats()
+                        )
+                ).play();
+
+                itemsToRemove.add(item); // Mark for removal
+            }
+        }
+
+        // Remove picked-up items from the layout and the items list
+        for (Item item : itemsToRemove) {
+            layout.getChildren().removeIf(node -> node instanceof ImageView &&
+                    node.getLayoutX() == item.getX() &&
+                    node.getLayoutY() == item.getY());
+            items.remove(item);
+        }
     }
+
+
+
 
 
     //----------------------------------------------------------------------------------------------------------------------
