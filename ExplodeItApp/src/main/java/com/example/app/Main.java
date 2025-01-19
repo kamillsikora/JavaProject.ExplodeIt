@@ -17,6 +17,9 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 
 public class Main extends Application {
@@ -37,12 +40,26 @@ public class Main extends Application {
     private final List<Item> items = new ArrayList<>();
 
 
+
+
     @Override
     public void start(Stage stage) {
-        Label mapLabel = new Label("Map");
+        // Main title label
+        Label titleLabel = new Label("EXPLODE IT GAME");
+        titleLabel.setStyle("-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: white;");
+        VBox.setMargin(titleLabel, new Insets(20, 0, 0, 0)); // Add spacing to move it up
+
+        // Instruction label
+        Label instructionLabel = new Label("Please select your map to play the game.");
+        instructionLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white;");
+
+        // Map selection components
+        Label mapLabel = new Label("Select a Map:");
+        mapLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
 
         ComboBox<String> mapComboBox = new ComboBox<>();
-        mapComboBox.setPromptText("Select a Map");
+        mapComboBox.setPromptText("Available Maps");
+        mapComboBox.setPrefWidth(300); // Increased width for better usability
 
         List<Map> maps = Map.fetchMaps();
         for (Map map : maps) {
@@ -50,22 +67,41 @@ public class Main extends Application {
         }
 
         Button selectMapButton = new Button("Next");
+        selectMapButton.setStyle("-fx-font-size: 14px; -fx-background-color: #5cb85c; -fx-text-fill: white; -fx-padding: 10;");
 
+        // Map selection panel
         VBox mapSelectionLayout = new VBox(10, mapLabel, mapComboBox, selectMapButton);
-        mapSelectionLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
-        Scene mapSelectionScene = new Scene(mapSelectionLayout, 1200, 700);
+        mapSelectionLayout.setStyle(
+                "-fx-padding: 20; -fx-alignment: center; -fx-background-color: #343a40; "
+                        + "-fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 10; -fx-background-radius: 10;"
+        );
+        mapSelectionLayout.setMaxWidth(350); // Panel width adjusted to fit the combo box
 
+        // Exit button
+        Button exitButton = new Button("Exit Game");
+        exitButton.setStyle("-fx-font-size: 14px; -fx-background-color: #d9534f; -fx-text-fill: white; -fx-padding: 10;");
+        VBox.setMargin(exitButton, new Insets(0, 0, 20, 0)); // Add spacing to move it down
+        exitButton.setOnAction(event -> System.exit(0));
+
+        // Main layout
+        VBox mainLayout = new VBox(20, titleLabel, instructionLabel, mapSelectionLayout, exitButton);
+        mainLayout.setStyle("-fx-background-color: black; -fx-padding: 30; -fx-alignment: center;");
+
+        Scene mapSelectionScene = new Scene(mainLayout, 1200, 700);
+
+        // Disable resizing and set the scene
+        stage.setResizable(false);
         stage.setScene(mapSelectionScene);
-        stage.setTitle("Map Selector");
+        stage.setTitle("Explode It Game - Map Selector");
         stage.show();
 
+        // Event for the "Next" button
         selectMapButton.setOnAction(event -> {
             String selectedMapName = mapComboBox.getValue();
 
             if (selectedMapName == null) {
                 showAlert("Please select a map!");
             } else {
-                // Przypisanie wybranej mapy do zmiennej selectedMap
                 selectedMap = null;
                 for (Map map : maps) {
                     if (map.getName().equals(selectedMapName)) {
@@ -74,92 +110,140 @@ public class Main extends Application {
                     }
                 }
                 if (selectedMap != null) {
-                    // Ładowanie bloków dla wybranej mapy
                     selectedMap.loadBlocks();
-
-                    // Przechodzimy do wyboru gracza
                     showPlayer1CharacterSelection(stage, selectedMap);
                 }
             }
         });
     }
 
+
+
     private void showPlayer1CharacterSelection(Stage stage, Map map) {
+        // Title Label
         Label characterLabel = new Label("Player 1: Select Your Character");
+        characterLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        VBox.setMargin(characterLabel, new Insets(20, 0, 20, 0)); // Spacing around the label
 
-        VBox charactersDisplay = new VBox(10);
+        // Horizontal display for characters
+        HBox charactersDisplay = new HBox(20); // Horizontal layout
         charactersDisplay.setAlignment(Pos.CENTER);
+        charactersDisplay.setStyle("-fx-padding: 20;");
 
+        // Fetch and display characters
         List<Character> characters = Character.fetchCharacters();
-
         for (Character character : characters) {
-            VBox characterBox = new VBox(10);
-            characterBox.setAlignment(Pos.CENTER);
+            VBox characterTile = new VBox(10); // Vertical layout for each character tile
+            characterTile.setAlignment(Pos.CENTER);
+            characterTile.setStyle(
+                    "-fx-background-color: #343a40; -fx-padding: 15; -fx-border-radius: 10; -fx-background-radius: 10; "
+                            + "-fx-border-color: white; -fx-border-width: 2;"
+            );
 
+            // Character Image
             ImageView characterImage = new ImageView(new Image(getClass().getResource(character.getLook().getFront()).toExternalForm()));
-            characterImage.setFitWidth(50);
-            characterImage.setFitHeight(50);
+            characterImage.setFitWidth(100);
+            characterImage.setFitHeight(100);
 
-            Label characterDetails = new Label(character.getName() + "\n" +
-                    "Speed: " + character.getCharacterSpeed() + "\n" +
-                    "Explosion Power: " + character.getExplodePower() + "\n" +
-                    "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
-                    "Max Bombs: " + character.getMaxBombs());
+            // Character Details
+            Label characterDetails = new Label(
+                    character.getName() + "\n" +
+                            "Speed: " + character.getCharacterSpeed() + "\n" +
+                            "Explosion Power: " + character.getExplodePower() + "\n" +
+                            "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
+                            "Max Bombs: " + character.getMaxBombs()
+            );
+            characterDetails.setStyle("-fx-font-size: 14px; -fx-text-fill: white; -fx-text-alignment: center;");
 
+            // Select Button
             Button selectCharacterButton = new Button("Select");
+            selectCharacterButton.setStyle(
+                    "-fx-font-size: 14px; -fx-background-color: #5cb85c; -fx-text-fill: white; -fx-padding: 8; -fx-border-radius: 5;"
+            );
             selectCharacterButton.setOnAction(event -> {
                 player1Character = character;
                 showPlayer2CharacterSelection(stage, map);
             });
 
-            characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
-            charactersDisplay.getChildren().add(characterBox);
-        }
-        VBox characterSelectionLayout = new VBox(10, characterLabel, charactersDisplay);
-        characterSelectionLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+            // Add components to the tile
+            characterTile.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
 
+            // Add the tile to the horizontal display
+            charactersDisplay.getChildren().add(characterTile);
+        }
+
+        // Layout for the page
+        VBox characterSelectionLayout = new VBox(20, characterLabel, charactersDisplay);
+        characterSelectionLayout.setStyle("-fx-background-color: black; -fx-padding: 30; -fx-alignment: center;");
+
+        // Scene setup
         Scene characterSelectionScene = new Scene(characterSelectionLayout, 1200, 700);
         stage.setScene(characterSelectionScene);
     }
 
+
     private void showPlayer2CharacterSelection(Stage stage, Map map) {
+        // Title Label
         Label characterLabel = new Label("Player 2: Select Your Character");
+        characterLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        VBox.setMargin(characterLabel, new Insets(20, 0, 20, 0)); // Spacing around the label
 
-        VBox charactersDisplay = new VBox(10);
+        // Horizontal display for characters
+        HBox charactersDisplay = new HBox(20); // Horizontal layout
         charactersDisplay.setAlignment(Pos.CENTER);
+        charactersDisplay.setStyle("-fx-padding: 20;");
 
+        // Fetch and display characters
         List<Character> characters = Character.fetchCharacters();
-
         for (Character character : characters) {
-            VBox characterBox = new VBox(10);
-            characterBox.setAlignment(Pos.CENTER);
+            VBox characterTile = new VBox(10); // Vertical layout for each character tile
+            characterTile.setAlignment(Pos.CENTER);
+            characterTile.setStyle(
+                    "-fx-background-color: #343a40; -fx-padding: 15; -fx-border-radius: 10; -fx-background-radius: 10; "
+                            + "-fx-border-color: white; -fx-border-width: 2;"
+            );
 
+            // Character Image
             ImageView characterImage = new ImageView(new Image(getClass().getResource(character.getLook().getFront()).toExternalForm()));
-            characterImage.setFitWidth(50);
-            characterImage.setFitHeight(50);
+            characterImage.setFitWidth(100);
+            characterImage.setFitHeight(100);
 
-            Label characterDetails = new Label(character.getName() + "\n" +
-                    "Speed: " + character.getCharacterSpeed() + "\n" +
-                    "Explosion Power: " + character.getExplodePower() + "\n" +
-                    "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
-                    "Max Bombs: " + character.getMaxBombs());
+            // Character Details
+            Label characterDetails = new Label(
+                    character.getName() + "\n" +
+                            "Speed: " + character.getCharacterSpeed() + "\n" +
+                            "Explosion Power: " + character.getExplodePower() + "\n" +
+                            "Explosion Speed: " + character.getExplodeSpeed() + "\n" +
+                            "Max Bombs: " + character.getMaxBombs()
+            );
+            characterDetails.setStyle("-fx-font-size: 14px; -fx-text-fill: white; -fx-text-alignment: center;");
 
+            // Select Button
             Button selectCharacterButton = new Button("Select");
+            selectCharacterButton.setStyle(
+                    "-fx-font-size: 14px; -fx-background-color: #5cb85c; -fx-text-fill: white; -fx-padding: 8; -fx-border-radius: 5;"
+            );
             selectCharacterButton.setOnAction(event -> {
                 player2Character = character;
                 showMapWithCharacters(stage, map);
             });
 
-            characterBox.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
-            charactersDisplay.getChildren().add(characterBox);
+            // Add components to the tile
+            characterTile.getChildren().addAll(characterImage, characterDetails, selectCharacterButton);
+
+            // Add the tile to the horizontal display
+            charactersDisplay.getChildren().add(characterTile);
         }
 
-        VBox characterSelectionLayout = new VBox(10, characterLabel, charactersDisplay);
-        characterSelectionLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+        // Layout for the page
+        VBox characterSelectionLayout = new VBox(20, characterLabel, charactersDisplay);
+        characterSelectionLayout.setStyle("-fx-background-color: black; -fx-padding: 30; -fx-alignment: center;");
 
+        // Scene setup
         Scene characterSelectionScene = new Scene(characterSelectionLayout, 1200, 700);
         stage.setScene(characterSelectionScene);
     }
+
 
 
     private final List<ImageView> bombs = new ArrayList<>();
@@ -667,19 +751,62 @@ public class Main extends Application {
     }
 
     private void endGame(String winnerMessage) {
-        if (gameOver) return; // Jeśli gra już się zakończyła, pomiń
-        gameOver = true; // Zatrzymaj grę
+        if (gameOver) return;
+        gameOver = true;
 
         Platform.runLater(() -> {
+            // Create a custom alert dialog
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Game Over");
             alert.setHeaderText(null);
             alert.setContentText(winnerMessage);
 
-            alert.setOnHidden(event -> Platform.exit()); // Zamknij aplikację po zamknięciu alertu
+            // Custom styling for the alert dialog
+            alert.getDialogPane().setStyle(
+                    "-fx-background-color: #dce2e7; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 20;"
+            );
+
+            // Apply custom styles directly to the buttons
+            alert.getButtonTypes().forEach(buttonType -> {
+                Button button = (Button) alert.getDialogPane().lookupButton(buttonType);
+                button.setStyle("-fx-background-color: #343a40; -fx-text-fill: white; -fx-border-radius: 5;");
+            });
+
+            // When the alert is closed, redirect to the start screen
+            alert.setOnHidden(event -> {
+                restartGame();
+            });
+
             alert.show();
         });
     }
+    private void restartGame() {
+        try {
+            // Get the current Java application
+            String javaBin = System.getProperty("java.home") + "/bin/java";
+            File currentJar = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+
+            // If the program was started from a JAR file
+            if (currentJar.getName().endsWith(".jar")) {
+                // Create a new process to restart the program
+                ProcessBuilder builder = new ProcessBuilder(javaBin, "-jar", currentJar.getPath());
+                builder.start();
+                System.exit(0); // Exit the current instance of the program
+            } else {
+                // If not running from a JAR file, use the classpath to restart
+                String classpath = System.getProperty("java.class.path");
+                ProcessBuilder builder = new ProcessBuilder(javaBin, "-cp", classpath, Main.class.getName());
+                builder.start();
+                System.exit(0); // Exit the current instance of the program
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 
     private boolean checkCollision(ImageView player, int dx, int dy) {
         double nextX = player.getLayoutX() + dx;
