@@ -16,10 +16,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 
 public class Main extends Application {
@@ -774,38 +770,11 @@ public class Main extends Application {
 
             // When the alert is closed, redirect to the start screen
             alert.setOnHidden(event -> {
-                restartGame();
+                System.exit(0);
             });
-
             alert.show();
         });
     }
-    private void restartGame() {
-        try {
-            // Get the current Java application
-            String javaBin = System.getProperty("java.home") + "/bin/java";
-            File currentJar = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-
-            // If the program was started from a JAR file
-            if (currentJar.getName().endsWith(".jar")) {
-                // Create a new process to restart the program
-                ProcessBuilder builder = new ProcessBuilder(javaBin, "-jar", currentJar.getPath());
-                builder.start();
-                System.exit(0); // Exit the current instance of the program
-            } else {
-                // If not running from a JAR file, use the classpath to restart
-                String classpath = System.getProperty("java.class.path");
-                ProcessBuilder builder = new ProcessBuilder(javaBin, "-cp", classpath, Main.class.getName());
-                builder.start();
-                System.exit(0); // Exit the current instance of the program
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
 
     private boolean checkCollision(ImageView player, int dx, int dy) {
@@ -863,8 +832,6 @@ public class Main extends Application {
 
         alert.show(); // Używamy `show()` zamiast `showAndWait()`
     }
-
-
 
     private void showAlert(String message) {
         Platform.runLater(() -> {
