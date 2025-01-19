@@ -66,10 +66,9 @@ public class Character {
     }
 
     public int getMaxBombs() {
-        return maxBombs; // Getter dla maxBombs
+        return maxBombs;
     }
 
-    // Statyczna metoda do pobierania danych z bazy
     public static List<Character> fetchCharacters() {
         List<Character> characters = new ArrayList<>();
         try (Connection connection = DbConfig.connect()) {
@@ -115,6 +114,7 @@ public class Character {
         this.characterSpeed = originalCharacterSpeed;
         this.explodePower = originalExplodePower;
         this.maxBombs = originalMaxBombs;
+        this.hp=originalHp;
     }
     public void decrementHP(){
         this.hp -= 1;

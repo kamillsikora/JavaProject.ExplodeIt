@@ -25,17 +25,12 @@ public class Main extends Application {
     private ImageView player1Image;
     private ImageView player2Image;
     private final Set<KeyCode> pressedKeys = new HashSet<>();
-    private boolean player1MovingVertically = false;
-    private boolean player2MovingVertically = false;
     private final List<Rectangle> blockRectangles = new ArrayList<>();
     private boolean gameOver = false;
     private final List<ImageView> activeBombs = new ArrayList<>();
     private final Set<ImageView> accessibleBombs = new HashSet<>();
     private Map selectedMap = null;
-
     private final List<Item> items = new ArrayList<>();
-
-
 
 
     @Override
@@ -114,22 +109,21 @@ public class Main extends Application {
     }
 
 
-
     private void showPlayer1CharacterSelection(Stage stage, Map map) {
         // Title Label
         Label characterLabel = new Label("Player 1: Select Your Character");
         characterLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
-        VBox.setMargin(characterLabel, new Insets(20, 0, 20, 0)); // Spacing around the label
+        VBox.setMargin(characterLabel, new Insets(20, 0, 20, 0));
 
         // Horizontal display for characters
-        HBox charactersDisplay = new HBox(20); // Horizontal layout
+        HBox charactersDisplay = new HBox(20);
         charactersDisplay.setAlignment(Pos.CENTER);
         charactersDisplay.setStyle("-fx-padding: 20;");
 
         // Fetch and display characters
         List<Character> characters = Character.fetchCharacters();
         for (Character character : characters) {
-            VBox characterTile = new VBox(10); // Vertical layout for each character tile
+            VBox characterTile = new VBox(10);
             characterTile.setAlignment(Pos.CENTER);
             characterTile.setStyle(
                     "-fx-background-color: #343a40; -fx-padding: 15; -fx-border-radius: 10; -fx-background-radius: 10; "
@@ -182,17 +176,17 @@ public class Main extends Application {
         // Title Label
         Label characterLabel = new Label("Player 2: Select Your Character");
         characterLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
-        VBox.setMargin(characterLabel, new Insets(20, 0, 20, 0)); // Spacing around the label
+        VBox.setMargin(characterLabel, new Insets(20, 0, 20, 0));
 
         // Horizontal display for characters
-        HBox charactersDisplay = new HBox(20); // Horizontal layout
+        HBox charactersDisplay = new HBox(20);
         charactersDisplay.setAlignment(Pos.CENTER);
         charactersDisplay.setStyle("-fx-padding: 20;");
 
         // Fetch and display characters
         List<Character> characters = Character.fetchCharacters();
         for (Character character : characters) {
-            VBox characterTile = new VBox(10); // Vertical layout for each character tile
+            VBox characterTile = new VBox(10);
             characterTile.setAlignment(Pos.CENTER);
             characterTile.setStyle(
                     "-fx-background-color: #343a40; -fx-padding: 15; -fx-border-radius: 10; -fx-background-radius: 10; "
@@ -255,6 +249,13 @@ public class Main extends Application {
             layout.setStyle("-fx-background-color: " + colorOrImage + ";");
         }
 
+        // Calculate map height dynamically based on blocks
+        int maxY = map.getBlocks().stream()
+                .mapToInt(Block::getPositionY)
+                .max()
+                .orElse(0);
+        int mapHeight = (maxY + 1) * 50;
+
         // Render blocks on the map
         for (Block block : map.getBlocks()) {
             Rectangle blockRect = new Rectangle(block.getPositionX() * 50, block.getPositionY() * 50, 50, 50);
@@ -280,37 +281,67 @@ public class Main extends Application {
         // Add players to the layout
         layout.getChildren().addAll(player1Image, player2Image);
 
+        // Player statistics panels
+        Label player1StatsLabel = new Label("Player1: Speed: " + player1Character.getCharacterSpeed() +
+                " ExPower: " + player1Character.getExplodePower() +
+                " MaxBombs: " + player1Character.getMaxBombs());
+        player1StatsLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
+
+        Label player2StatsLabel = new Label("Player2: Speed: " + player2Character.getCharacterSpeed() +
+                " ExPower: " + player2Character.getExplodePower() +
+                " MaxBombs: " + player2Character.getMaxBombs());
+        player2StatsLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
+
+        // Player HP labels
         Label player1HpLabel = new Label("Player 1 HP: " + player1Character.getHp());
         Label player2HpLabel = new Label("Player 2 HP: " + player2Character.getHp());
         player1HpLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
         player2HpLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
 
+        // Create the bottom panel
         HBox hpPanel = new HBox();
         hpPanel.setPadding(new Insets(10));
         hpPanel.setSpacing(50);
         hpPanel.setStyle("-fx-background-color: black;");
         hpPanel.setPrefHeight(50);
-
-        HBox.setHgrow(player1HpLabel, Priority.ALWAYS);
-        HBox.setHgrow(player2HpLabel, Priority.ALWAYS);
-        player1HpLabel.setAlignment(Pos.CENTER_LEFT);
-        player2HpLabel.setAlignment(Pos.CENTER_RIGHT);
         hpPanel.setAlignment(Pos.CENTER);
 
-        hpPanel.getChildren().addAll(player1HpLabel, player2HpLabel);
+        // Add statistics and HP labels to the panel
+        VBox player1Panel = new VBox(player1StatsLabel, player1HpLabel);
+        player1Panel.setSpacing(5);
+        player1Panel.setAlignment(Pos.CENTER_LEFT);
 
+        VBox player2Panel = new VBox(player2StatsLabel, player2HpLabel);
+        player2Panel.setSpacing(5);
+        player2Panel.setAlignment(Pos.CENTER_RIGHT);
+
+        hpPanel.getChildren().addAll(player1Panel, new Pane(), player2Panel);
+        HBox.setHgrow(hpPanel.getChildren().get(1), Priority.ALWAYS);
+
+        // Create a BorderPane and set the map and panel
         BorderPane borderPane = new BorderPane();
         borderPane.setCenter(layout);
         borderPane.setBottom(hpPanel);
 
-        Scene scene = new Scene(borderPane, 1200, 750);
+        // Calculate total height dynamically
+        int panelHeight = 50;
+        int totalHeight = mapHeight + panelHeight;
 
+        Scene scene = new Scene(borderPane, 1200, totalHeight + 25);
+
+        // Update stats and HP dynamically
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 updatePlayerPositions(scene);
                 player1HpLabel.setText("Player 1 HP: " + player1Character.getHp());
                 player2HpLabel.setText("Player 2 HP: " + player2Character.getHp());
+                player1StatsLabel.setText("Player1: Speed: " + player1Character.getCharacterSpeed() +
+                        " ExPower: " + player1Character.getExplodePower() +
+                        " MaxBombs: " + player1Character.getMaxBombs());
+                player2StatsLabel.setText("Player2: Speed: " + player2Character.getCharacterSpeed() +
+                        " ExPower: " + player2Character.getExplodePower() +
+                        " MaxBombs: " + player2Character.getMaxBombs());
             }
         };
         timer.start();
@@ -318,43 +349,39 @@ public class Main extends Application {
         scene.setOnKeyPressed(event -> {
             pressedKeys.add(event.getCode());
             if (event.getCode() == KeyCode.SPACE) {
-                dropBomb(player1Character, player1Image, layout); // Pass player 1 character
+                dropBomb(player1Character, player1Image, layout);
             }
             if (event.getCode() == KeyCode.ENTER) {
-                dropBomb(player2Character, player2Image, layout); // Pass player 2 character
+                dropBomb(player2Character, player2Image, layout);
             }
         });
 
         scene.setOnKeyReleased(event -> pressedKeys.remove(event.getCode()));
-
         stage.setScene(scene);
     }
 
 
+
+
     private void dropBomb(Character character, ImageView player, Pane layout) {
         try {
-            // Sprawdź liczbę aktywnych bomb przypisanych do danego gracza
             long activeBombCount = activeBombs.stream()
                     .filter(bomb -> bomb.getUserData() == character)
                     .count();
 
-            // Sprawdź, czy gracz nie przekroczył limitu bomb
             if (activeBombCount >= character.getMaxBombs()) {
-                return; // Nie można postawić kolejnej bomby
+                return;
             }
 
-            // Oblicz pozycję bomby na siatce mapy
             double bombX = Math.round(player.getLayoutX() / 50) * 50;
             double bombY = Math.round(player.getLayoutY() / 50) * 50;
 
-            // Sprawdź, czy na tej pozycji nie ma już bomby
             boolean bombAlreadyExists = activeBombs.stream()
                     .anyMatch(bomb -> bomb.getLayoutX() == bombX && bomb.getLayoutY() == bombY);
             if (bombAlreadyExists) {
-                return; // Nie można postawić bomby w tym samym miejscu
+                return;
             }
 
-            // Wczytaj obraz bomby
             Image bombImage = new Image(getClass().getResource(
                     "/org/example/explodeitapp/images/bomb.png").toExternalForm());
             ImageView bomb = new ImageView(bombImage);
@@ -363,28 +390,23 @@ public class Main extends Application {
 
             bomb.setLayoutX(bombX);
             bomb.setLayoutY(bombY);
-            bomb.setUserData(character); // Przypisz bombę do właściciela (gracza)
+            bomb.setUserData(character);
 
-            // Dodaj bombę do layoutu i listy aktywnych bomb
             layout.getChildren().add(bomb);
             activeBombs.add(bomb);
-            accessibleBombs.add(bomb); // Na początku bomba jest dostępna dla przejścia
-
-            // Na początku bomba jest dostępna dla przejścia
             accessibleBombs.add(bomb);
 
-            // Obsługa wybuchu bomby
+            accessibleBombs.add(bomb);
+
             int explodeSpeed = character.getExplodeSpeed();
             new javafx.animation.Timeline(
                     new javafx.animation.KeyFrame(
                             javafx.util.Duration.seconds(explodeSpeed),
                             event -> {
-                                // Usuń bombę po wybuchu
                                 layout.getChildren().remove(bomb);
                                 activeBombs.remove(bomb);
                                 accessibleBombs.remove(bomb);
 
-                                // Wywołaj eksplozję
                                 triggerExplosion(character, bombX, bombY, layout);
                             }
                     )
@@ -396,9 +418,8 @@ public class Main extends Application {
 
     private void updatePlayerPositions(Scene scene) {
         if (gameOver) {
-            return; // Prevent movement after the game ends
+            return;
         }
-
         double sceneWidth = 1200;
         double sceneHeight = 700;
         double margin = 5;
@@ -552,34 +573,28 @@ public class Main extends Application {
                 if (block instanceof DestructibleBlock || block instanceof LuckyBlock) {
                     checkAndDestroyBlock(x, y, layout); // Destroy block if destructible
                 }
-                return true; // Block encountered, stop further flames
+                return true;
             }
         }
-        // Add flame if no block encountered
         addFlame(x, y, layout, flameImage);
-        return false; // No block encountered, continue propagation
+        return false;
     }
 
 
     private void checkAndDestroyBlock(double x, double y, Pane layout) {
-        // Zaokrąglamy pozycje do wielokrotności 50 (zakładając, że każdy blok ma rozmiar 50x50)
         int posX = (int) (x / 50);
         int posY = (int) (y / 50);
 
         for (Block blockAtPosition : selectedMap.getBlocks()) {
             if (blockAtPosition.getPositionX() == posX && blockAtPosition.getPositionY() == posY) {
                 if (blockAtPosition instanceof LuckyBlock || blockAtPosition instanceof DestructibleBlock) {
-                    // Usuwamy blok z mapy logicznej
                     selectedMap.removeBlock(blockAtPosition);
 
-                    // Usuwamy odpowiadający mu Rectangle z listy blockRectangles
                     blockRectangles.removeIf(rectangle -> {
-                        // Usuwamy blok, jeśli jego pozycja w layout odpowiada usuniętemu blokowi
                         return rectangle.getX() == blockAtPosition.getPositionX() * 50
                                 && rectangle.getY() == blockAtPosition.getPositionY() * 50;
                     });
 
-                    // Usuwamy blok z layoutu
                     layout.getChildren().removeIf(node -> {
                         if (node instanceof Rectangle) {
                             Rectangle blockRect = (Rectangle) node;
@@ -592,12 +607,11 @@ public class Main extends Application {
                         addItem(blockAtPosition.getPositionX() * 50, blockAtPosition.getPositionY() * 50, layout);
                     }
 
-                    break; // Przerywamy pętlę po usunięciu bloku
+                    break;
                 }
             }
         }
     }
-    //code for items----------------------------------------------------------------------------------------------------
     private void addItem(double x, double y, Pane layout) {
         int itemid = getRandomNumber();
         Item newItem = new Item(itemid, x, y);
@@ -606,10 +620,10 @@ public class Main extends Application {
         Image itemImage = new Image(getClass().getResource(Item.getItemLook(itemid)).toExternalForm());
         // Create an ImageView for the item
         ImageView item = new ImageView(itemImage);
-        item.setFitWidth(50);  // Assuming the size of the item is 50x50
+        item.setFitWidth(50);
         item.setFitHeight(50);
-        item.setLayoutX(x);  // Set the X position based on the bomb's position
-        item.setLayoutY(y);  // Set the Y position based on the bomb's position
+        item.setLayoutX(x);
+        item.setLayoutY(y);
         // Add the item to the layout (map)
         layout.getChildren().add(item);
         player1Image.toFront();
@@ -633,34 +647,6 @@ public class Main extends Application {
             return 3;
         }
     }
-    /*private void checkPlayerPickUpItem() {
-        // Assuming layout is the Pane that holds both the player and the items
-        Pane layout = (Pane) player1Image.getParent();
-
-        for (var node : layout.getChildren()) {
-            if (node instanceof ImageView) {
-                ImageView item = (ImageView) node;
-
-                // Check if this ImageView is the item (you can customize the condition here)
-                if (item.getImage().getUrl().contains("item")) {
-
-                    // Check if player 1 intersects with the item
-                    if (player1Image.getBoundsInParent().intersects(item.getBoundsInParent())) {
-                        System.out.println("Item picked up by Player 1!");
-                        layout.getChildren().remove(item); // Remove the item from the layout
-                        break;  // Exit loop after removing the item (since it can only be picked up once)
-                    }
-
-                    // Check if player 2 intersects with the item
-                    if (player2Image.getBoundsInParent().intersects(item.getBoundsInParent())) {
-                        System.out.println("Item picked up by Player 2!");
-                        layout.getChildren().remove(item); // Remove the item from the layout
-                        break;  // Exit loop after removing the item
-                    }
-                }
-            }
-        }
-    }*/
 
     private void checkPlayerPickUpItem() {
         Pane layout = (Pane) player1Image.getParent();
@@ -679,7 +665,6 @@ public class Main extends Application {
                                 event -> player1Character.revertToOriginalStats()
                         )
                 ).play();
-
                 itemsToRemove.add(item); // Mark for removal
             }
 
@@ -688,7 +673,6 @@ public class Main extends Application {
                 System.out.println("Item picked up by Player 2!");
                 player2Character.applyItemEffects(item);
 
-                // Schedule reverting the effects after the item's duration
                 new javafx.animation.Timeline(
                         new javafx.animation.KeyFrame(
                                 javafx.util.Duration.seconds(item.getTimeOfEffect()),
@@ -696,7 +680,7 @@ public class Main extends Application {
                         )
                 ).play();
 
-                itemsToRemove.add(item); // Mark for removal
+                itemsToRemove.add(item);
             }
         }
 
@@ -709,12 +693,6 @@ public class Main extends Application {
         }
     }
 
-
-
-
-
-    //----------------------------------------------------------------------------------------------------------------------
-
     private void addFlame(double x, double y, Pane layout, Image flameImage) {
         ImageView flame = new ImageView(flameImage);
         flame.setFitWidth(50);
@@ -723,14 +701,12 @@ public class Main extends Application {
         flame.setLayoutY(y);
         layout.getChildren().add(flame);
 
-        // Sprawdź, czy płomień trafia w gracza
         if (checkPlayerOnFlame(player1Image, x, y)) {
             endGame("Player 2 wins!");
         } else if (checkPlayerOnFlame(player2Image, x, y)) {
             endGame("Player 1 wins!");
         }
 
-        // Usuń płomień po 1 sekundzie
         new javafx.animation.Timeline(
                 new javafx.animation.KeyFrame(
                         javafx.util.Duration.seconds(1),
@@ -781,27 +757,25 @@ public class Main extends Application {
         double nextX = player.getLayoutX() + dx;
         double nextY = player.getLayoutY() + dy;
 
-        // Sprawdź kolizję z blokami
         for (Rectangle block : blockRectangles) {
             if (block.getBoundsInParent().intersects(
                     nextX,
                     nextY,
                     player.getFitWidth(),
                     player.getFitHeight())) {
-                return true; // Blok znajduje się w drodze
+                return true;
             }
         }
 
-        // Sprawdź kolizję z bombami
         for (ImageView bomb : activeBombs) {
             if (bomb.getBoundsInParent().intersects(
                     nextX,
                     nextY,
                     player.getFitWidth(),
                     player.getFitHeight())) {
-                // Jeśli bomba jest dostępna, pozwól przejść
+
                 if (accessibleBombs.contains(bomb)) {
-                    // Usuń bombę z dostępnych, gdy gracz odejdzie
+
                     if (!bomb.getBoundsInParent().intersects(
                             player.getLayoutX(),
                             player.getLayoutY(),
@@ -809,28 +783,13 @@ public class Main extends Application {
                             player.getFitHeight())) {
                         accessibleBombs.remove(bomb);
                     }
-                    return false; // Brak kolizji
+                    return false;
                 }
-                return true; // Kolizja z bombą
+                return true;
             }
         }
 
-        return false; // Brak kolizji
-    }
-
-    private void showGameOverAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Game Over");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-
-        // Ustaw akcję po zamknięciu alertu
-        alert.setOnHidden(event -> Platform.runLater(() -> {
-            // Zakończ aplikację
-            Platform.exit();
-        }));
-
-        alert.show(); // Używamy `show()` zamiast `showAndWait()`
+        return false;
     }
 
     private void showAlert(String message) {
@@ -842,8 +801,6 @@ public class Main extends Application {
             alert.showAndWait();
         });
     }
-
-
     public static void main(String[] args) {
         launch();
     }

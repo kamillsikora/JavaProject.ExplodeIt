@@ -8,9 +8,6 @@ import java.sql.SQLException;
 public class Item {
     private int itemID;
     private int timeOfEffect;
-
-    private int dropProbability;
-
     private int charactersSpeed;
 
     private int charactersPower;
@@ -117,10 +114,6 @@ public class Item {
 
     public int getTimeOfEffect() {
         return timeOfEffect;
-    }
-
-    public int getDropProbability() {
-        return dropProbability;
     }
 
     public int getCharactersSpeed() {
