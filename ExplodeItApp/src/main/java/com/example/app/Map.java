@@ -35,7 +35,6 @@ public class Map {
         return blocks;
     }
 
-    //Fetch maps from the database
     public static List<Map> fetchMaps() {
         List<Map> maps = new ArrayList<>();
         try (Connection connection = DbConfig.connect()) {
@@ -55,7 +54,6 @@ public class Map {
         return maps;
     }
 
-    //Fetch blocks for the map
     public void loadBlocks() {
         try (Connection connection = DbConfig.connect()) {
             if (connection != null) {
@@ -98,12 +96,10 @@ public class Map {
         blocks.remove(block);
     }
 
-
-    //Helper to create a com.example.app.Block instance from the type
     private Block createBlockFromResultSet(String type, String color) {
         switch (type) {
             case "LUCKY":
-                return new LuckyBlock(color, true, 50, new ArrayList<>()); //Example lootProbability
+                return new LuckyBlock(color, true, 50, new ArrayList<>());
             case "DESTRUCTIBLE":
                 return new DestructibleBlock(color);
             case "INDESTRUCTIBLE":
